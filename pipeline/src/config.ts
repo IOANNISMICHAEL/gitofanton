@@ -37,6 +37,8 @@ export const FIRST_RUN_LOOKBACK_HOURS = 4
 // D1 free limit is 100k rows written/day, split between the two jobs (each keeps its own count in KV).
 export const D1_DAILY_WRITE_GUARD = 55_000 // data.yml
 export const D1_DISCOVER_WRITE_GUARD = 35_000 // discover.yml (first MCP import spreads over ~3–4 days)
+// Part of discover's daily share kept for repo linking and downloads while the first import is still running.
+export const DISCOVER_RESERVE_WRITES = 10_000
 export const TOOL_REPO_MIN_STARS = 10 // a tool's GitHub repo joins star tracking at or above this
 export const TOOL_REPO_LOOKUPS_PER_DAY = 3000
 export const TOOL_REPO_RECHECK_DAYS = 7

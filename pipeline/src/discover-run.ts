@@ -4,7 +4,7 @@
 //   2. Resolve each tool's GitHub repo; repos with >= TOOL_REPO_MIN_STARS join star tracking
 //   3. Weekly npm / PyPI downloads, one seventh of the packages per day
 import { d1Usage, initWriteBudget, kvGet, kvPut, writeBudgetLeft } from './cf.ts'
-import { D1_DISCOVER_WRITE_GUARD, GITHUB_CONCURRENCY, TOOL_REPO_LOOKUPS_PER_DAY, TOOL_REPO_MIN_STARS, TOOL_REPO_RECHECK_DAYS } from './config.ts'
+import { D1_DISCOVER_WRITE_GUARD, DISCOVER_RESERVE_WRITES, GITHUB_CONCURRENCY, TOOL_REPO_LOOKUPS_PER_DAY, TOOL_REPO_MIN_STARS, TOOL_REPO_RECHECK_DAYS } from './config.ts'
 import { loadRules, makeCategoriser, stripFormatWords } from './categorise.ts'
 import { fetchWeeklyDownloads, weekOf } from './downloads.ts'
 import { fetchMetaByNames, graphqlStats } from './github.ts'
@@ -56,7 +56,8 @@ async function importMcp(state: DiscoverState, categorise: ReturnType<typeof mak
   let seen = 0
   const { resumeCursor, pages } = await crawlRegistry({ cursor: initial ? state.mcp.cursor : null, updatedSince: state.mcp.updatedSince }, async (servers) => {
     const rows = servers.map((s) => toToolRow(s, categorise, nowIso))
-    if (writeBudgetLeft() < rows.length * 2) return false // resume tomorrow
+    // Leave a reserve so linking and downloads still run on days the import is budget-bound.
+    if (writeBudgetLeft() - DISCOVER_RESERVE_WRITES < rows.length * 2) return false // resume tomorrow
     await upsertTools(rows)
     seen += rows.length
     return true
@@ -91,11 +92,12 @@ async function refreshDownloads(now: Date) {
   const slice = Math.floor(now.getTime() / DAY_MS) % 7
   const pkgs = await packagesForSlice(slice, 7)
   const week = weekOf(now)
-  const rows = await fetchWeeklyDownloads(pkgs)
-  if (writeBudgetLeft() < rows.length) {
-    log('downloads: skipped, write budget used up today', { rows: rows.length })
+  // Check the budget before spending minutes on fetching (PyPI allows 60 requests/minute).
+  if (writeBudgetLeft() < pkgs.length) {
+    log('downloads: skipped, write budget used up today', { packages: pkgs.length })
     return
   }
+  const rows = await fetchWeeklyDownloads(pkgs)
   await writeDownloads(rows.map(([id, n]) => [id, week, n]))
 }
 
