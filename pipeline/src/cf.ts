@@ -25,19 +25,27 @@ type D1Result<T> = { results: T[]; meta: D1Meta }
 let writtenThisRun = 0
 let readThisRun = 0
 let writtenTodayBefore = 0
+let guard = D1_DAILY_WRITE_GUARD
 
-/** Seed the guard with the rows already written today (kept in KV state). */
-export function initWriteBudget(alreadyWrittenToday: number) {
+/**
+ * Seed the guard with the rows this job already wrote today (kept in KV). Each job has its own
+ * share of the free 100k/day so they never need to coordinate: data.yml and discover.yml.
+ */
+export function initWriteBudget(alreadyWrittenToday: number, dailyGuard = D1_DAILY_WRITE_GUARD) {
   writtenTodayBefore = alreadyWrittenToday
+  guard = dailyGuard
 }
+
+/** Rows that can still be written today under this job's guard. */
+export const writeBudgetLeft = () => guard - writtenTodayBefore - writtenThisRun
 
 export const d1Usage = () => ({ writtenThisRun, readThisRun, writtenToday: writtenTodayBefore + writtenThisRun })
 
 /** Fail before writing if `estimatedRows` would push today's total past the guard. */
 export function assertWriteBudget(estimatedRows: number) {
   const projected = writtenTodayBefore + writtenThisRun + estimatedRows
-  if (projected > D1_DAILY_WRITE_GUARD) {
-    throw new Error(`D1 write guard: ${projected} rows today would exceed ${D1_DAILY_WRITE_GUARD}`)
+  if (projected > guard) {
+    throw new Error(`D1 write guard: ${projected} rows today would exceed ${guard}`)
   }
 }
 
@@ -62,10 +70,10 @@ export async function d1<T = Record<string, unknown>>(sql: string, params: unkno
  * Write many rows with one statement per chunk: `sql` must read rows from `json_each(?1)`.
  * Each row counts as ~2 written rows when the table has one index.
  */
-export async function d1BulkWrite(sql: string, rows: unknown[], rowsPerChunk = 500, writeFactor = 2) {
+export async function d1BulkWrite(sql: string, rows: unknown[], rowsPerChunk = 500, writeFactor = 2, extraParams: unknown[] = []) {
   if (rows.length === 0) return
   assertWriteBudget(rows.length * writeFactor)
-  for (const part of chunk(rows, rowsPerChunk)) await d1(sql, [JSON.stringify(part)])
+  for (const part of chunk(rows, rowsPerChunk)) await d1(sql, [JSON.stringify(part), ...extraParams])
 }
 
 // ---------- KV ----------

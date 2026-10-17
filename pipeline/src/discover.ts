@@ -89,7 +89,7 @@ export async function runArchiveDiscovery(state: State, activity: Activity, name
     .map(([id]) => ({ id, name: names.get(Number(id))! }))
 
   const batches = await mapLimit(chunk(candidates, 100), GITHUB_CONCURRENCY, (b) => fetchMetaByNames(b.map((c) => c.name)))
-  const metas = batches.flat()
+  const metas = batches.flat().filter((m): m is RepoMeta => !!m)
   const byId = new Map(metas.map((m) => [m.id, m]))
   const keep: RepoMeta[] = []
   for (const c of candidates) {

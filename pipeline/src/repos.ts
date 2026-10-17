@@ -18,6 +18,9 @@ export type RepoRow = {
   avatar_url: string | null
   created_at: string
   pushed_at: string | null
+  node_id: string
+  stars: number | null
+  forks: number | null
   is_fork: number
   is_archived: number
   category: Category
@@ -75,7 +78,7 @@ export async function windowSums(from30: string, from7: string, lastDay: string)
   return { rows: r.results, historyDays: days.results[0]?.n ?? 0 }
 }
 
-const REPO_COLUMNS = `id, full_name, description, language, topics, license, homepage, avatar_url, created_at, pushed_at,
+const REPO_COLUMNS = `id, node_id, stars, forks, full_name, description, language, topics, license, homepage, avatar_url, created_at, pushed_at,
   is_fork, is_archived, category, flag_reason, enriched_at`
 
 async function readPaged(where: string, params: unknown[]): Promise<RepoRow[]> {
@@ -98,8 +101,8 @@ type RepoCache = { asOf: string; rows: RepoRow[] }
  * Repo metadata for scoring. Most rows never change between runs, so the previous run's copy is
  * kept on disk (restored by data.yml from the Actions cache) and only rows enriched since are read.
  */
-export async function readReposCached(dir: string): Promise<RepoRow[]> {
-  const file = join(dir, 'repos.v2.json.gz') // bump the version when REPO_COLUMNS changes
+export async function readReposCached(dir: string): Promise<{ rows: RepoRow[]; changed: RepoRow[] }> {
+  const file = join(dir, 'repos.v3.json.gz') // bump the version when REPO_COLUMNS changes
   let cache: RepoCache | null = null
   if (existsSync(file)) {
     try {
@@ -109,18 +112,20 @@ export async function readReposCached(dir: string): Promise<RepoRow[]> {
     }
   }
   let rows: RepoRow[]
+  let changed: RepoRow[]
   if (cache) {
-    const changed = await readPaged('AND enriched_at > ?2', [cache.asOf])
+    changed = await readPaged('AND enriched_at > ?2', [cache.asOf])
     const byId = new Map(cache.rows.map((r) => [r.id, r]))
     for (const r of changed) byId.set(r.id, r)
     rows = [...byId.values()]
     log('read-repos: incremental', { cached: cache.rows.length, changed: changed.length })
   } else {
     rows = await readPaged('', [])
+    changed = rows
     log('read-repos: full', { rows: rows.length })
   }
   const asOf = rows.reduce((m, r) => (r.enriched_at && r.enriched_at > m ? r.enriched_at : m), cache?.asOf ?? '')
   mkdirSync(dir, { recursive: true })
   writeFileSync(file, gzipSync(Buffer.from(JSON.stringify({ asOf, rows } satisfies RepoCache))))
-  return rows
+  return { rows, changed }
 }

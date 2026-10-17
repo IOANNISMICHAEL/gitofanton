@@ -34,7 +34,12 @@ export const QUIET_RUNS_PER_DAY = 5 // quiet repos checked per run = quiet total
 export const MAX_HOURS_PER_RUN = 8 // GH Archive hourly files per run
 export const FIRST_RUN_LOOKBACK_HOURS = 4
 
-export const D1_DAILY_WRITE_GUARD = 80_000 // free limit is 100k rows written/day
+// D1 free limit is 100k rows written/day, split between the two jobs (each keeps its own count in KV).
+export const D1_DAILY_WRITE_GUARD = 55_000 // data.yml
+export const D1_DISCOVER_WRITE_GUARD = 35_000 // discover.yml (first MCP import spreads over ~3–4 days)
+export const TOOL_REPO_MIN_STARS = 10 // a tool's GitHub repo joins star tracking at or above this
+export const TOOL_REPO_LOOKUPS_PER_DAY = 3000
+export const TOOL_REPO_RECHECK_DAYS = 7
 export const OUT_FILE_LIMIT = 18_000 // Workers static assets limit is 20,000 files per version
 export const FORMULA_VERSION = 1
 

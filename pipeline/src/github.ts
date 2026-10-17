@@ -137,16 +137,20 @@ export async function fetchSnapshots(nodeIds: string[]): Promise<Snapshot[]> {
     .map((n) => ({ id: n.databaseId, nodeId: n.id, stars: n.stargazerCount, forks: n.forkCount, isArchived: n.isArchived }))
 }
 
-/** Full metadata for up to 100 "owner/name" strings (GH Archive gives names, not node ids). */
-export async function fetchMetaByNames(names: string[]): Promise<RepoMeta[]> {
+/**
+ * Full metadata for up to 100 "owner/name" strings (GH Archive and registries give names, not ids).
+ * Result i belongs to names[i]: null when the repo is missing or private. Renamed repos resolve to their new name.
+ */
+export async function fetchMetaByNames(names: string[]): Promise<(RepoMeta | null)[]> {
   const parts = names.map((full, i) => {
     const [owner, name] = full.split('/')
     return `r${i}: repository(owner: ${JSON.stringify(owner)}, name: ${JSON.stringify(name)}) { ...M }`
   })
   const data = await graphql<Record<string, RawMeta | null>>(`query { rateLimit { cost remaining } ${parts.join('\n')} }`)
-  return Object.entries(data)
-    .filter(([k, v]) => k !== 'rateLimit' && v && (v as RawMeta).databaseId)
-    .map(([, v]) => toMeta(v as RawMeta))
+  return names.map((_, i) => {
+    const v = data[`r${i}`]
+    return v && v.databaseId ? toMeta(v) : null
+  })
 }
 
 /** Time one 100-id batch with lighter query shapes, to learn what the star lookup actually costs. */

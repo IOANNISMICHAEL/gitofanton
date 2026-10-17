@@ -13,6 +13,7 @@ import { planSnapshots } from './snapshot.ts'
 import { loadState, loadWindows, saveState, saveWindows, type State, type Tracked, type Windows } from './state.ts'
 import { DAY_MS, addDays, chunk, log, mapLimit, step, stepTimings, utcDay } from './util.ts'
 import { writeAll } from './write-json.ts'
+import { toolboxCounts } from './tools.ts'
 import { BURST_MIN_DAY_GAIN, STARGAZER_PAGES_FOR_BURST, coordinated, judge, loadBlocklist, makeBlocker, pickCandidates, youngIds } from './trust.ts'
 import { rank } from './score.ts'
 
@@ -180,7 +181,16 @@ async function main() {
 
   // 6. Score.
   const win = reloadWindows ? await loadWindows() : windows
-  const rows = await step('read-repos', () => readReposCached(CACHE_DIR))
+  const { rows, changed } = await step('read-repos', () => readReposCached(CACHE_DIR))
+  // Repos written by other jobs (discover.yml: toolbox repos >= 10 stars) start being tracked here.
+  // Baseline = their stored star count; the next snapshot makes it exact.
+  let adopted = 0
+  for (const r of changed) {
+    if (state.repos[r.id] || r.is_fork || !r.node_id || r.stars == null) continue
+    state.repos[r.id] = [r.node_id, r.stars, r.forks ?? 0, r.stars, r.forks ?? 0, epochDay, r.is_archived ? 1 : 0, 0]
+    adopted++
+  }
+  if (adopted) log('tracking repos added by other jobs', { adopted })
   const todayAct = state.activity[today] ?? {}
   const scored: Scored[] = []
   for (const r of rows) {
@@ -220,6 +230,7 @@ async function main() {
   // 8. JSON.
   const out = await step('write-json', async () => writeAll(OUT_DIR, scored, now, {
     trackedRepos: Object.keys(state.repos).length,
+    toolbox: await toolboxCounts(),
     historyDays: win.historyDays,
     historyAsOf: win.asOf,
   }))

@@ -20,6 +20,13 @@ export function loadOverrides(): Record<string, Override> {
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
+/**
+ * Words that name a tool's format, not its job. Removed before categorising toolbox items so that
+ * "MCP server for Postgres" lands in Data & databases rather than AI & agents.
+ */
+const FORMAT_WORDS = /\b(?:model context protocol|mcp servers?|mcp|agent skills?|claude (?:code )?skills?|skills?|plugins?|servers? for|server)\b/gi
+export const stripFormatWords = (s: string) => s.replace(FORMAT_WORDS, ' ').replace(/\s+/g, ' ').trim()
+
 export function makeCategoriser(rules: Rule[]) {
   const compiled = rules.map((r) => ({
     id: r.id,
