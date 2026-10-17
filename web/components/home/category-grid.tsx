@@ -22,11 +22,11 @@ export function CategoryGrid({ repoCounts, toolCounts }: { repoCounts: Record<st
           <Link
             key={c.id}
             href={`/category/${c.id}/`}
-            className="group flex flex-col gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-foreground/40"
+            className="neon group flex flex-col gap-3 p-5 hover:-translate-y-0.5"
           >
-            <Icon className="size-5 text-muted-foreground transition-colors group-hover:text-foreground" aria-hidden />
-            <span className="text-sm font-medium leading-snug text-foreground">{c.label}</span>
-            <span className="mt-auto text-xs text-muted-foreground tabular-nums">
+            <Icon className="size-6 text-muted-foreground transition-colors group-hover:text-foreground" aria-hidden />
+            <span className="text-base font-medium leading-snug text-foreground">{c.label}</span>
+            <span className="mt-auto font-mono text-xs text-muted-foreground tabular-nums">
               {repos.toLocaleString("en-US")} repos{tools ? ` · ${tools.toLocaleString("en-US")} tools` : ""}
             </span>
           </Link>

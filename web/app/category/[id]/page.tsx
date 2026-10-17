@@ -62,7 +62,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
           <span aria-hidden> / </span>
           <Link href="/categories/" className="hover:text-foreground">Categories</Link>
         </nav>
-        <h1 className="font-display text-5xl tracking-tight text-foreground sm:text-6xl">{label}</h1>
+        <h1 className="font-display text-5xl tracking-tight text-foreground text-glow sm:text-7xl">{label}</h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">{about(id)}</p>
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
           <CompactList title="Trending this week" href={trending.href} items={trending.items} gainLabel="this week" showCategory={false} />

@@ -47,7 +47,7 @@ export function Navigation() {
           }`}
         >
           <Link href="/" className="flex items-center gap-2 group">
-            <span className={`font-display tracking-tight text-foreground transition-all duration-500 ${isScrolled ? "text-xl" : "text-2xl"}`}>Git of Anton</span>
+            <span className={`cursor-blink font-display tracking-tight text-foreground text-glow transition-all duration-500 ${isScrolled ? "text-xl" : "text-2xl"}`}>Git of Anton</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-10">

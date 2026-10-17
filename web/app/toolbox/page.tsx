@@ -38,7 +38,7 @@ export default function ToolboxPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="mx-auto w-full max-w-[1100px] px-4 pb-20 pt-28 sm:px-6 lg:px-8">
         <header className="mb-10">
-          <h1 className="font-display text-5xl tracking-tight text-foreground sm:text-6xl">Agent toolbox</h1>
+          <h1 className="font-display text-5xl tracking-tight text-foreground text-glow sm:text-7xl">Agent toolbox</h1>
           <p className="mt-3 max-w-2xl text-muted-foreground">{description}</p>
         </header>
         {SECTIONS.map(({ list, key }) => {

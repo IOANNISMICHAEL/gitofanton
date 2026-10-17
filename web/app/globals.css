@@ -40,7 +40,7 @@
 }
 
 .dark {
-  --background: oklch(0.06 0.008 260);
+  --background: oklch(0.045 0.006 260);
   --foreground: oklch(0.94 0.005 90);
   --card: oklch(0.09 0.008 260);
   --card-foreground: oklch(0.94 0.005 90);
@@ -56,8 +56,8 @@
   --accent-foreground: oklch(0.94 0.005 90);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.94 0.005 90);
-  --border: oklch(0.18 0.008 260);
-  --input: oklch(0.14 0.008 260);
+  --border: oklch(0.24 0.006 260);
+  --input: oklch(0.16 0.008 260);
   --ring: oklch(0.94 0.005 90);
   --chart-1: oklch(0.94 0.005 90);
   --chart-2: oklch(0.72 0.01 90);
@@ -126,6 +126,11 @@
   }
   html {
     scroll-behavior: smooth;
+    /* One step bigger than the browser default: easier to read, still minimal. */
+    font-size: 17px;
+  }
+  @media (min-width: 1024px) {
+    html { font-size: 18px; }
   }
 }
 
@@ -239,4 +244,168 @@
     50%  { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
+}
+
+
+/* ---------- Git of Anton look: minimal, black and white, faint terminal texture ---------- */
+:root {
+  --glow: 0 0 0 1px oklch(0 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.06);
+  --glow-strong: 0 0 0 1px oklch(0 0 0 / 0.2), 0 4px 16px oklch(0 0 0 / 0.08);
+  --grid-line: oklch(0 0 0 / 0.04);
+  --trace: oklch(0.2 0.01 260);
+}
+.dark {
+  --glow: 0 0 0 1px oklch(1 0 0 / 0.14), 0 0 18px -6px oklch(1 0 0 / 0.18);
+  --glow-strong: 0 0 0 1px oklch(1 0 0 / 0.55), 0 0 22px -2px oklch(1 0 0 / 0.35), inset 0 0 18px -10px oklch(1 0 0 / 0.4);
+  --grid-line: oklch(1 0 0 / 0.035);
+  --trace: oklch(1 0 0);
+}
+
+/* Faint grid behind every page, fading out towards the bottom. */
+body {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-attachment: fixed;
+}
+
+/* Scanlines: a barely visible CRT texture over the whole page (dark theme only). */
+.dark body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  background: repeating-linear-gradient(to bottom, oklch(1 0 0 / 0.018) 0 1px, transparent 1px 3px);
+  mix-blend-mode: screen;
+}
+
+/* Panels and cards: hairline that glows white on hover. */
+.neon {
+  border-radius: calc(var(--radius) + 6px);
+  border: 1px solid transparent;
+  background-color: color-mix(in oklch, var(--card) 88%, transparent);
+  box-shadow: var(--glow);
+  transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+.neon:hover,
+.neon:focus-within {
+  box-shadow: var(--glow-strong);
+}
+
+/* Neon trace: an SVG outline that draws itself once when the card scrolls into view. */
+.trace-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+.trace-svg rect {
+  fill: none;
+  stroke: var(--trace);
+  stroke-width: 1.25;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px oklch(1 0 0 / 0.9));
+}
+[data-traced='true'] .trace-svg rect {
+  animation: trace-draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) forwards, trace-fade 1.2s ease 1.4s forwards;
+}
+@keyframes trace-draw {
+  0% { stroke-dashoffset: 1; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
+}
+@keyframes trace-fade {
+  to { opacity: 0; }
+}
+
+/* LIVE indicator */
+.live-dot {
+  position: relative;
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: var(--foreground);
+  box-shadow: 0 0 8px var(--foreground);
+}
+.live-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes live-ping {
+  75%, 100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* Blinking terminal cursor */
+.cursor-blink::after {
+  content: '▍';
+  margin-left: 0.1em;
+  animation: blink 1.1s steps(1) infinite;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* Spotlight cone from above (used over the metrics strip). */
+.spotlight {
+  position: relative;
+  isolation: isolate;
+}
+.spotlight::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: -10rem;
+  width: min(900px, 120%);
+  height: 22rem;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse 50% 60% at 50% 0%, oklch(1 0 0 / 0.11), transparent 70%);
+  pointer-events: none;
+}
+
+/* Text with a soft white glow (headings in the dark theme). */
+.dark .text-glow {
+  text-shadow: 0 0 24px oklch(1 0 0 / 0.25), 0 0 2px oklch(1 0 0 / 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trace-svg rect,
+  .live-dot::after,
+  .cursor-blink::after {
+    animation: none !important;
+  }
+  .neon {
+    transition: none;
+  }
+}
+
+/* Hero: faint light rays converging from above, behind the particle title. */
+.hero-rays {
+  position: relative;
+  isolation: isolate;
+}
+.hero-rays::before {
+  content: '';
+  position: absolute;
+  inset: -6rem -10vw 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 70% at 50% 0%, oklch(1 0 0 / 0.07), transparent 70%),
+    repeating-conic-gradient(from 180deg at 50% -20%, oklch(1 0 0 / 0.045) 0deg 0.6deg, transparent 0.6deg 7deg);
+  mask-image: radial-gradient(ellipse 70% 80% at 50% 10%, #000 30%, transparent 75%);
+  opacity: 0;
+}
+.dark .hero-rays::before {
+  opacity: 1;
 }

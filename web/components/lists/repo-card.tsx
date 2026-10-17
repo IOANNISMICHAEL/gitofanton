@@ -11,7 +11,7 @@ export function RepoCard({ item, rank, gainLabel, asOf }: { item: Item; rank: nu
   const url = isTool ? (item.u ?? (item.rp ? `https://github.com/${item.rp}` : null)) : `https://github.com/${item.n}`;
 
   return (
-    <article className="group relative flex gap-4 border-b border-border py-5">
+    <article className="group relative -mx-3 flex gap-4 rounded-lg border-b border-border px-3 py-5 transition-[background-color,box-shadow] duration-300 hover:bg-card hover:shadow-[var(--glow-strong)]">
       <span className="w-6 shrink-0 pt-1 text-right font-mono text-sm text-muted-foreground tabular-nums">{rank}</span>
 
       {item.a ? (
@@ -24,7 +24,7 @@ export function RepoCard({ item, rank, gainLabel, asOf }: { item: Item; rank: nu
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h3 className="min-w-0 text-base leading-snug">
+          <h3 className="min-w-0 text-lg leading-snug">
             {url ? (
               <a href={url} target="_blank" rel="noopener noreferrer" className="break-words hover:underline after:absolute after:inset-0 after:content-['']">
                 {owner ? <span className="text-muted-foreground">{owner}/</span> : null}
@@ -52,7 +52,7 @@ export function RepoCard({ item, rank, gainLabel, asOf }: { item: Item; rank: nu
         </div>
 
         {isTool && item.rp ? <p className="mt-0.5 font-mono text-xs text-muted-foreground">{item.rp}</p> : null}
-        {item.d ? <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.d}</p> : null}
+        {item.d ? <p className="mt-1 line-clamp-2 text-muted-foreground">{item.d}</p> : null}
 
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
           {item.l ? (

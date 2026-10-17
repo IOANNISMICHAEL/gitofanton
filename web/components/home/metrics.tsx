@@ -1,4 +1,6 @@
-import { formatStars, type Meta } from "@/lib/data";
+import { type Meta } from "@/lib/data";
+import { CountUp } from "@/components/fx/count-up";
+import { NeonCard } from "@/components/fx/neon-card";
 
 /** Headline numbers, all straight from the latest data run. */
 export function Metrics({ meta }: { meta: Meta | null }) {
@@ -11,13 +13,15 @@ export function Metrics({ meta }: { meta: Meta | null }) {
     { value: meta?.starsToday, label: "Stars gained today" },
   ];
   return (
-    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-5">
-      {items.map((m) => (
-        <div key={m.label} className="bg-card px-4 py-4">
-          <dd className="font-display text-3xl text-foreground tabular-nums sm:text-4xl">{m.value ? formatStars(m.value) : "—"}</dd>
-          <dt className="mt-1 text-xs text-muted-foreground">{m.label}</dt>
-        </div>
-      ))}
-    </dl>
+    <NeonCard>
+      <dl className="grid grid-cols-2 sm:grid-cols-5">
+        {items.map((m, i) => (
+          <div key={m.label} className={`px-5 py-5 ${i > 0 ? "sm:border-l sm:border-border" : ""} ${i > 1 ? "border-t border-border sm:border-t-0" : ""}`}>
+            <dd className="font-display text-4xl text-foreground text-glow sm:text-5xl">{m.value ? <CountUp value={m.value} /> : "—"}</dd>
+            <dt className="mt-2 font-mono text-[0.7rem] uppercase tracking-[0.15em] text-muted-foreground">{m.label}</dt>
+          </div>
+        ))}
+      </dl>
+    </NeonCard>
   );
 }

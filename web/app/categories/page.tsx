@@ -15,7 +15,7 @@ export default function CategoriesPage() {
   return (
     <SiteShell>
       <div className="mx-auto w-full max-w-[1200px] px-4 pb-20 pt-28 sm:px-6 lg:px-8">
-        <h1 className="font-display text-5xl tracking-tight text-foreground sm:text-6xl">Categories</h1>
+        <h1 className="font-display text-5xl tracking-tight text-foreground text-glow sm:text-7xl">Categories</h1>
         <p className="mb-8 mt-3 max-w-2xl text-muted-foreground">Grouped by the job a project does, so repos, skills, MCP servers and agents for the same job sit together.</p>
         <CategoryGrid repoCounts={meta?.categoryCounts ?? {}} toolCounts={tools?.byCategory ?? {}} />
       </div>

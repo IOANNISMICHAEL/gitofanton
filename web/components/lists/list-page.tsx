@@ -118,8 +118,8 @@ export function ListPage(p: ViewProps) {
             ) : null}
             <Link href={`${L.base}/`} className="hover:text-foreground">{L.title}</Link>
           </nav>
-          <h1 className="font-display text-5xl tracking-tight text-foreground sm:text-6xl">{heading}</h1>
-          <p className="mt-3 max-w-2xl text-muted-foreground">{L.blurb}</p>
+          <h1 className="font-display text-5xl tracking-tight text-foreground text-glow sm:text-7xl">{heading}</h1>
+          <p className="mt-4 max-w-2xl text-lg text-muted-foreground">{L.blurb}</p>
         </header>
 
         <div className="mb-4 space-y-3 border-b border-border pb-4">

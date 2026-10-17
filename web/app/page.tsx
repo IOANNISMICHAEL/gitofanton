@@ -5,6 +5,8 @@ import { SiteShell } from "@/components/site-shell";
 import { CompactList } from "@/components/home/compact-list";
 import { CategoryGrid } from "@/components/home/category-grid";
 import { Metrics } from "@/components/home/metrics";
+import { ParticleTitle } from "@/components/fx/particle-title";
+import { NeonCard } from "@/components/fx/neon-card";
 import { SITE_URL, type Item, type ListId, type WindowId } from "@/lib/data";
 import { readMeta, readToolboxMeta, readView } from "@/lib/server-data";
 
@@ -42,22 +44,22 @@ export default function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="mx-auto w-full max-w-[1200px] px-4 pb-20 pt-28 sm:px-6 lg:px-8">
         {/* Hero */}
-        <header className="mb-8">
-          <h1 className="font-display text-[clamp(2.5rem,6vw,5rem)] leading-[0.95] tracking-tight text-foreground">Git of Anton</h1>
-          <p className="mt-4 max-w-2xl text-lg text-muted-foreground">
+        <header className="hero-rays mb-10">
+          <ParticleTitle text="Git of Anton" className="h-[clamp(120px,20vw,260px)] w-full flex items-center" />
+          <p className="mt-4 max-w-2xl text-xl leading-relaxed text-muted-foreground">
             What&apos;s taking off on GitHub right now — repositories, agent skills, MCP servers and coding agents — by real star growth,
             refreshed every 4 hours.
           </p>
           {meta?.trendingTopics?.length ? (
             <div className="mt-5 flex flex-wrap items-center gap-2">
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">Trending topics</span>
+              <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Trending topics</span>
               {meta.trendingTopics.map((t) => (
                 <a
                   key={t}
                   href={`https://github.com/topics/${t}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-full border border-border px-2.5 py-0.5 font-mono text-xs text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+                  className="rounded-full border border-border px-3 py-1 font-mono text-sm text-muted-foreground transition-[color,box-shadow] hover:text-foreground hover:shadow-[var(--glow-strong)]"
                 >
                   #{t}
                 </a>
@@ -66,8 +68,14 @@ export default function Home() {
           ) : null}
         </header>
 
-        <Metrics meta={meta} />
-        {updated ? <p className="mt-2 text-xs text-muted-foreground">Updated {updated}</p> : null}
+        <div className="spotlight">
+          <Metrics meta={meta} />
+        </div>
+        {updated ? (
+          <p className="mt-3 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground">
+            <span className="live-dot" aria-hidden /> Live · updated {updated}
+          </p>
+        ) : null}
 
         {/* GitHub */}
         <div className="mt-10 grid gap-4 lg:grid-cols-2">
@@ -80,7 +88,7 @@ export default function Home() {
         {/* Categories */}
         <section id="categories" className="mt-14" aria-labelledby="h-categories">
           <div className="mb-4 flex items-baseline justify-between gap-3">
-            <h2 id="h-categories" className="font-display text-3xl text-foreground">Browse by category</h2>
+            <h2 id="h-categories" className="font-display text-4xl text-foreground text-glow">Browse by category</h2>
             <Link href="/categories/" className="text-sm text-muted-foreground hover:text-foreground">All categories</Link>
           </div>
           <CategoryGrid repoCounts={meta?.categoryCounts ?? {}} toolCounts={toolMeta?.byCategory ?? {}} />
@@ -89,7 +97,7 @@ export default function Home() {
         {/* Toolbox */}
         <section className="mt-14" aria-labelledby="h-toolbox">
           <div className="mb-4 flex items-baseline justify-between gap-3">
-            <h2 id="h-toolbox" className="font-display text-3xl text-foreground">Agent toolbox</h2>
+            <h2 id="h-toolbox" className="font-display text-4xl text-foreground text-glow">Agent toolbox</h2>
             <Link href="/toolbox/" className="text-sm text-muted-foreground hover:text-foreground">Open the toolbox</Link>
           </div>
           <div className="grid gap-4 lg:grid-cols-3">
@@ -106,11 +114,11 @@ export default function Home() {
             { icon: ShieldCheck, title: "Bought stars filtered out", text: "Bursts, empty new accounts and coordinated starring are flagged and left out of rankings." },
             { icon: Tags, title: "Grouped by the job", text: "A game-development category holds game repos, Unity MCP servers and Godot skills together." },
           ].map(({ icon: Icon, title, text }) => (
-            <div key={title} className="rounded-lg border border-border p-5">
-              <Icon className="size-5 text-muted-foreground" aria-hidden />
-              <h3 className="mt-3 text-sm font-medium text-foreground">{title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{text}</p>
-            </div>
+            <NeonCard key={title} className="p-6">
+              <Icon className="size-6 text-foreground" aria-hidden />
+              <h3 className="mt-4 text-lg font-medium text-foreground">{title}</h3>
+              <p className="mt-2 text-muted-foreground">{text}</p>
+            </NeonCard>
           ))}
         </section>
       </div>
