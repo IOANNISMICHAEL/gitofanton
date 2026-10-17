@@ -107,10 +107,17 @@ export function ParticleTitle({ text, className }: { text: string; className?: s
       if (visible) raf = requestAnimationFrame(step);
     };
 
-    build();
-    raf = requestAnimationFrame(() => setReady(true));
-    if (reduced) draw(0);
-    else raf = requestAnimationFrame(step);
+    let cancelled = false;
+    // Sample the glyphs only after the display font has loaded, or the particles take the fallback font's shape.
+    const fontFamily = h1 ? getComputedStyle(h1).fontFamily : "serif";
+    const fontsReady = document.fonts?.load ? document.fonts.load(`100px ${fontFamily}`, text).catch(() => undefined) : Promise.resolve();
+    void fontsReady.then(() => {
+      if (cancelled) return;
+      build();
+      setReady(true);
+      if (reduced) draw(0);
+      else raf = requestAnimationFrame(step);
+    });
 
     const onMove = (e: PointerEvent) => {
       const r = cv.getBoundingClientRect();
@@ -136,6 +143,7 @@ export function ParticleTitle({ text, className }: { text: string; className?: s
     box.addEventListener("pointerleave", onLeave);
     window.addEventListener("resize", onResize);
     return () => {
+      cancelled = true;
       cancelAnimationFrame(raf);
       io.disconnect();
       box.removeEventListener("pointermove", onMove);
