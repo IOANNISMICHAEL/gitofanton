@@ -41,6 +41,8 @@ export const D1_DISCOVER_WRITE_GUARD = 35_000 // discover.yml (first MCP import 
 export const DISCOVER_RESERVE_WRITES = 10_000
 export const TOOL_REPO_MIN_STARS = 10 // a tool's GitHub repo joins star tracking at or above this
 export const TOOL_REPO_LOOKUPS_PER_DAY = 3000
+// Repo file-list checks per discover run. GITHUB_TOKEN allows 1,000 REST calls/hour; a GH_PAT 5,000.
+export const TREE_SCANS_PER_RUN = Number(process.env.TREE_SCANS_PER_RUN ?? 900)
 export const TOOL_REPO_RECHECK_DAYS = 7
 export const OUT_FILE_LIMIT = 18_000 // Workers static assets limit is 20,000 files per version
 export const FORMULA_VERSION = 1

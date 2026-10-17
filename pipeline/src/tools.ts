@@ -19,15 +19,17 @@ export type ToolRow = {
   category: Category
   firstSeen: string
   sourceUpdatedAt: string | null
+  repoId?: number | null // known up front for skills, plugins and agents; resolved later for MCP servers
+  path?: string | null
 }
 
 export const contentHash = (v: unknown) => createHash('sha1').update(JSON.stringify(v)).digest('hex').slice(0, 16)
 
 // Unchanged records (same content_hash) are skipped by the WHERE on the update: no row is written.
 const UPSERT_TOOLS = `
-INSERT INTO tools (type, slug, name, title, description, repo_url, version, package, package_registry, remote,
+INSERT INTO tools (type, slug, name, title, description, repo_url, repo_id, path, version, package, package_registry, remote,
                    website, status, category, first_seen, source_updated_at, content_hash)
-SELECT j->>'type', j->>'slug', j->>'name', j->>'title', j->>'description', j->>'repoUrl', j->>'version',
+SELECT j->>'type', j->>'slug', j->>'name', j->>'title', j->>'description', j->>'repoUrl', j->>'repoId', j->>'path', j->>'version',
        j->>'package', j->>'packageRegistry', j->>'remote', j->>'website', j->>'status', j->>'category',
        j->>'firstSeen', j->>'sourceUpdatedAt', j->>'hash'
 FROM (SELECT value AS j FROM json_each(?1)) WHERE true
@@ -38,13 +40,25 @@ ON CONFLICT(slug) DO UPDATE SET
   status = excluded.status, category = excluded.category, source_updated_at = excluded.source_updated_at,
   content_hash = excluded.content_hash,
   -- a changed repo URL must be resolved again
-  repo_id = CASE WHEN tools.repo_url IS excluded.repo_url THEN tools.repo_id END,
+  repo_id = CASE WHEN tools.repo_url IS excluded.repo_url THEN COALESCE(excluded.repo_id, tools.repo_id) ELSE excluded.repo_id END,
+  path = excluded.path,
   repo_checked_at = CASE WHEN tools.repo_url IS excluded.repo_url THEN tools.repo_checked_at END
 WHERE tools.content_hash IS NOT excluded.content_hash`
 
 /** Upsert tools; `hash` covers everything shown, so only new or changed records cost a write. tools has one UNIQUE index (slug): ~2 rows written per changed row. */
 export async function upsertTools(rows: (ToolRow & { hash: string })[]) {
   await d1BulkWrite(UPSERT_TOOLS, rows, 300, 2)
+}
+
+/** Skills/plugins of rescanned repos that are no longer there: marked removed (kept for history). */
+export async function markRemoved(repoIds: number[], keepSlugs: string[]) {
+  if (!repoIds.length) return
+  await d1(
+    `UPDATE tools SET status = 'removed', content_hash = NULL
+     WHERE type IN ('skill', 'plugin') AND status != 'removed'
+       AND repo_id IN (SELECT value FROM json_each(?1)) AND slug NOT IN (SELECT value FROM json_each(?2))`,
+    [JSON.stringify(repoIds), JSON.stringify(keepSlugs)],
+  )
 }
 
 /** Tools whose GitHub repo still needs resolving (never checked, or checked over `recheckDays` ago and unresolved). */

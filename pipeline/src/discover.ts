@@ -9,7 +9,7 @@ const BASE = 'fork:false archived:false'
 const SEARCH_CAP = 1000 // GitHub search returns at most 1,000 results per query
 
 /** Split a star range until each slice has <= 1,000 results. */
-async function sliceByStars(lo: number, hi: number | null, extra: string, out: string[]) {
+export async function sliceByStars(lo: number, hi: number | null, extra: string, out: string[]) {
   const range = hi === null ? `>=${lo}` : `${lo}..${hi}`
   const q = `stars:${range} ${extra} ${BASE}`.trim()
   const n = await searchCount(q)

@@ -200,6 +200,34 @@ export async function fetchRecentStargazers(nodeId: string, since: number, maxPa
   return out
 }
 
+export const restStats = { requests: 0, remaining: -1 }
+
+/**
+ * GitHub REST GET. Returns null for 404/409 (missing, empty repo). Throws RateLimited when the hourly
+ * core limit is spent, so callers can stop and resume on the next run.
+ */
+export class RateLimited extends Error {}
+export async function restGet<T>(path: string, attempt = 0): Promise<T | null> {
+  const res = await fetch(`https://api.github.com${path}`, {
+    headers: {
+      authorization: `bearer ${env('GH_TOKEN')}`,
+      accept: 'application/vnd.github+json',
+      'x-github-api-version': '2022-11-28',
+      'user-agent': 'git-of-anton-pipeline',
+    },
+  })
+  restStats.requests++
+  restStats.remaining = Number(res.headers.get('x-ratelimit-remaining') ?? -1)
+  if (res.status === 404 || res.status === 409 || res.status === 451) return null
+  if ((res.status === 403 || res.status === 429) && restStats.remaining === 0) throw new RateLimited('GitHub REST core limit reached')
+  if ((res.status === 403 || res.status === 429 || res.status >= 500) && attempt < 3) {
+    await sleep(Number(res.headers.get('retry-after') ?? 0) * 1000 || 3000 * 2 ** attempt)
+    return restGet<T>(path, attempt + 1)
+  }
+  if (!res.ok) throw new Error(`GitHub REST ${path}: ${res.status}`)
+  return (await res.json()) as T
+}
+
 export async function searchCount(q: string): Promise<number> {
   const data = await graphql<{ search: { repositoryCount: number } }>(
     `query($q: String!) { rateLimit { cost remaining } search(query: $q, type: REPOSITORY, first: 1) { repositoryCount } }`,

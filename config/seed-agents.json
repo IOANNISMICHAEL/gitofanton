@@ -1,0 +1,23 @@
+{
+  "_doc": "Curated agent apps for the Toolbox (PLAN v2 §6). Every entry must appear in the Agents list; the discover log names any that no longer resolve (renamed, deleted, made private). Add freely.",
+  "agents": [
+    "anthropics/claude-code",
+    "openai/codex",
+    "google-gemini/gemini-cli",
+    "openclaw/openclaw",
+    "anomalyco/opencode",
+    "cline/cline",
+    "RooCodeInc/Roo-Code",
+    "Kilo-Org/kilocode",
+    "All-Hands-AI/OpenHands",
+    "block/goose",
+    "continuedev/continue",
+    "Aider-AI/aider",
+    "charmbracelet/crush",
+    "QwenLM/qwen-code",
+    "deepseek-ai/deepseek-harness",
+    "plandex-ai/plandex",
+    "SWE-agent/SWE-agent",
+    "zed-industries/zed"
+  ]
+}
