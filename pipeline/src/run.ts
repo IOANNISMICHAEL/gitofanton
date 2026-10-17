@@ -7,13 +7,16 @@ import { loadOverrides, loadRules, makeCategoriser } from './categorise.ts'
 import { runArchiveDiscovery, runSearchSeeds } from './discover.ts'
 import { benchmarkSnapshotQuery, fetchMetaByNodeIds, fetchRecentStargazers, fetchSnapshots, graphqlStats, type RepoMeta } from './github.ts'
 import { ingestGhArchive, type Activity } from './ingest-gharchive.ts'
-import { readReposCached, upsertRepos, windowSums, writeDailyStats } from './repos.ts'
+import { readReposCached, upsertRepos, windowSums, writeDailyStats, type RepoRow } from './repos.ts'
+import { CLASSIFIER_VERSION } from './classify.ts'
+import type { Category } from './config.ts'
 import type { Scored } from './score.ts'
 import { planSnapshots } from './snapshot.ts'
 import { loadState, loadWindows, saveState, saveWindows, type State, type Tracked, type Windows } from './state.ts'
 import { DAY_MS, addDays, chunk, log, mapLimit, step, stepTimings, utcDay } from './util.ts'
 import { writeAll } from './write-json.ts'
-import { toolboxCounts } from './tools.ts'
+import { latestDownloads, readToolsCached, toolboxCounts } from './tools.ts'
+import { writeToolbox } from './toolbox.ts'
 import { BURST_MIN_DAY_GAIN, STARGAZER_PAGES_FOR_BURST, coordinated, judge, loadBlocklist, makeBlocker, pickCandidates, youngIds } from './trust.ts'
 import { rank } from './score.ts'
 
@@ -78,6 +81,11 @@ async function rollover(state: State, today: string) {
   await saveWindows({ asOf: lastDay, historyDays, sums: Object.fromEntries(sums.map((s) => [s.id, [s.s7, s.s30, s.f7, s.a7, s.f30]])) })
   state.day = today
   for (const d of Object.keys(state.activity)) if (d < addDays(today, -1)) delete state.activity[d]
+}
+
+function pickCategory(rule: Category, r: RepoRow): Category {
+  if (rule !== 'other') return rule
+  return r.category_v === CLASSIFIER_VERSION && r.category ? r.category : 'other'
 }
 
 async function runTrust(state: State, scored: Scored[], overrides: Record<string, { trusted?: boolean }>, now: Date, nowHour: number) {
@@ -212,7 +220,8 @@ async function main() {
       createdAt: r.created_at,
       pushedAt: r.pushed_at,
       // Categorised every run from the stored fields, so rule changes apply without re-fetching.
-      category: ov.category ?? categorise({ topics, description: r.description, language: r.language }),
+      // Rules first (topics are reliable); the classifier's stored pick (discover.yml) for what they leave in "other".
+      category: ov.category ?? pickCategory(categorise({ topics, description: r.description, language: r.language }), r),
       stars: t[1],
       gain: { today: g1, week: g1 + s[0], month: g1 + s[1], all: t[1] },
       forks: { today: f1, week: f1 + s[2], month: f1 + (s[4] ?? s[2]), all: t[2] },
@@ -234,6 +243,12 @@ async function main() {
     historyDays: win.historyDays,
     historyAsOf: win.asOf,
   }))
+
+  // 8b. Toolbox lists (skills, MCP servers, agents & plugins).
+  await step('toolbox', async () => {
+    const [tools, downloads] = await Promise.all([readToolsCached(CACHE_DIR), latestDownloads()])
+    writeToolbox(OUT_DIR, tools, downloads, new Map(scored.map((s) => [s.id, s])), now)
+  })
 
   // 9. Persist state (one KV write).
   state.d1 = { day: today, written: d1Usage().writtenToday }

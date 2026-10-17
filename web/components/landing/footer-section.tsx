@@ -8,6 +8,7 @@ const footerLinks = {
     { name: "Most starred", href: "/top/" },
   ],
   Explore: [
+    { name: "Agent toolbox", href: "/toolbox/" },
     { name: "Radar", href: "/radar/" },
     { name: "News", href: "/news/" },
   ],

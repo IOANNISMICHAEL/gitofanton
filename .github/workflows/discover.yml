@@ -32,5 +32,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Apply D1 migrations
         run: pnpm exec wrangler d1 migrations apply git-of-anton --remote
+      # The category model (~23 MB, pinned revision in pipeline/src/classify.ts) is downloaded once.
+      - name: Cache category model
+        uses: actions/cache@v4
+        with:
+          path: .cache/pipeline/hf
+          key: hf-all-MiniLM-L6-v2-751bff37
       - name: Discover
         run: node pipeline/src/discover-run.ts

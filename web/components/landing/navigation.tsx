@@ -9,6 +9,7 @@ const navLinks = [
   { name: "Rising",   href: "/rising/"   },
   { name: "Gems",     href: "/gems/"     },
   { name: "Top",      href: "/top/"      },
+  { name: "Toolbox",  href: "/toolbox/"  },
   { name: "Radar",    href: "/radar/"    },
   { name: "News",     href: "/news/"     },
 ];

@@ -25,6 +25,7 @@ export type RepoRow = {
   is_archived: number
   category: Category
   flag_reason: string | null
+  category_v: number | null
   enriched_at: string | null
 }
 
@@ -40,7 +41,9 @@ ON CONFLICT(id) DO UPDATE SET
   language = excluded.language, topics = excluded.topics, license = excluded.license, homepage = excluded.homepage,
   avatar_url = excluded.avatar_url, stars = excluded.stars, forks = excluded.forks, created_at = excluded.created_at,
   pushed_at = excluded.pushed_at, is_fork = excluded.is_fork, is_archived = excluded.is_archived,
-  category = excluded.category, enriched_at = excluded.enriched_at`
+  category = excluded.category, enriched_at = excluded.enriched_at,
+  -- fresh metadata: let the discovery job classify it again if the rules say "other"
+  category_v = NULL`
 
 export async function upsertRepos(repos: (RepoMeta & { category: Category })[], enrichedAt: string) {
   const rows = repos.map((r) => ({
@@ -79,7 +82,7 @@ export async function windowSums(from30: string, from7: string, lastDay: string)
 }
 
 const REPO_COLUMNS = `id, node_id, stars, forks, full_name, description, language, topics, license, homepage, avatar_url, created_at, pushed_at,
-  is_fork, is_archived, category, flag_reason, enriched_at`
+  is_fork, is_archived, category, category_v, flag_reason, enriched_at`
 
 async function readPaged(where: string, params: unknown[]): Promise<RepoRow[]> {
   const out: RepoRow[] = []
@@ -102,7 +105,7 @@ type RepoCache = { asOf: string; rows: RepoRow[] }
  * kept on disk (restored by data.yml from the Actions cache) and only rows enriched since are read.
  */
 export async function readReposCached(dir: string): Promise<{ rows: RepoRow[]; changed: RepoRow[] }> {
-  const file = join(dir, 'repos.v3.json.gz') // bump the version when REPO_COLUMNS changes
+  const file = join(dir, 'repos.v4.json.gz') // bump the version when REPO_COLUMNS changes
   let cache: RepoCache | null = null
   if (existsSync(file)) {
     try {
@@ -128,4 +131,25 @@ export async function readReposCached(dir: string): Promise<{ rows: RepoRow[]; c
   mkdirSync(dir, { recursive: true })
   writeFileSync(file, gzipSync(Buffer.from(JSON.stringify({ asOf, rows } satisfies RepoCache))))
   return { rows, changed }
+}
+
+/** Repos whose stored category isn't from the current classifier version. */
+export async function reposToClassify(version: number) {
+  const r = await d1<{ id: number; full_name: string; description: string | null; topics: string; language: string | null }>(
+    `SELECT id, full_name, description, topics, language FROM repos WHERE category_v IS NOT ?1`,
+    [version],
+  )
+  return r.results
+}
+
+/** rows: [repoId, category] — stamps category_v; only repos the rules can't place are written. */
+export async function setRepoCategories(rows: [number, string][], version: number) {
+  await d1BulkWrite(
+    `UPDATE repos SET category = (SELECT value->>1 FROM json_each(?1) WHERE value->>0 = repos.id), category_v = ?2
+     WHERE id IN (SELECT value->>0 FROM json_each(?1))`,
+    rows,
+    1000,
+    1,
+    [version],
+  )
 }

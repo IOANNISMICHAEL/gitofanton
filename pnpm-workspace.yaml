@@ -2,3 +2,8 @@ allowBuilds:
   esbuild: true
   workerd: true
   sharp: false
+  onnxruntime-node: set this to true or false
+  protobufjs: set this to true or false
+  # Prebuilt binaries ship in the packages; their install scripts aren't needed.
+  onnxruntime-node: false
+  protobufjs: false

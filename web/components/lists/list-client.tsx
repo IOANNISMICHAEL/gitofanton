@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { RepoCard } from "@/components/lists/repo-card";
-import { langSlug, storage, windowOf, type Item, type ListId, type View, type WindowId } from "@/lib/data";
+import { LISTS, isToolList, langSlug, storage, windowOf, type Item, type ListId, type View, type WindowId } from "@/lib/data";
 
 const PAGE_SIZE = 25;
 
-export type SortId = "momentum" | "gained" | "total" | "growth" | "newest" | "updated" | "forks";
+export type SortId = "momentum" | "gained" | "total" | "growth" | "newest" | "updated" | "forks" | "downloads";
 
 const SORTS: Record<SortId, { label: string; key: (i: Item) => number | string }> = {
   momentum: { label: "Momentum", key: (i) => i.g / Math.log10(i.s + 100) },
@@ -17,17 +17,21 @@ const SORTS: Record<SortId, { label: string; key: (i: Item) => number | string }
   newest: { label: "Newest", key: (i) => i.cr },
   updated: { label: "Recently updated", key: (i) => i.p ?? "" },
   forks: { label: "Forks gained", key: (i) => i.fg },
+  downloads: { label: "Downloads (week)", key: (i) => i.dl ?? -1 },
 };
 
 export function sortOptions(list: ListId, window: WindowId): SortId[] {
-  if (window === "all") return ["total", "newest", "updated"];
-  return [...(list === "trending" ? (["momentum"] as const) : []), "gained", "total", "growth", "newest", "updated", "forks"];
+  const dl: SortId[] = LISTS[list].hasDownloads ? ["downloads"] : [];
+  if (window === "all") return ["total", ...dl, "newest", "updated"];
+  const momentum: SortId[] = list === "trending" || isToolList(list) ? ["momentum"] : [];
+  return [...momentum, "gained", "total", ...dl, "growth", "newest", "updated", "forks"];
 }
 
 /** The order the pipeline wrote (the list's own ranking). */
 export function defaultSort(list: ListId, window: WindowId): SortId {
   if (window === "all" || list === "top") return "total";
-  return { trending: "momentum", rising: "gained", gems: "growth" }[list] as SortId;
+  if (isToolList(list) || list === "trending") return "momentum";
+  return list === "rising" ? "gained" : "growth";
 }
 
 function sortItems(items: Item[], sort: SortId, natural: SortId) {
@@ -134,7 +138,9 @@ export function ListClient({
     <>
       <div className="mb-2 flex items-center justify-between gap-3 text-sm text-muted-foreground">
         <span className="flex items-center gap-4">
-          <span className="tabular-nums">{total.toLocaleString("en-US")} repositories</span>
+          <span className="tabular-nums">
+            {total.toLocaleString("en-US")} {LISTS[list].noun}
+          </span>
           {flaggedCount > 0 ? (
             <label className="inline-flex cursor-pointer items-center gap-1.5">
               <input type="checkbox" checked={showFlagged} onChange={(e) => toggleFlagged(e.target.checked)} className="accent-foreground" />
@@ -160,7 +166,7 @@ export function ListClient({
 
       {shown.length === 0 ? (
         <p className="py-16 text-center text-muted-foreground">
-          No repositories match yet. Star history started on 17 October 2026, so weekly and monthly lists fill in over the coming days.
+          Nothing matches yet. Star history started on 17 October 2026, so weekly and monthly lists fill in over the coming days.
         </p>
       ) : (
         <ol className="list-none">

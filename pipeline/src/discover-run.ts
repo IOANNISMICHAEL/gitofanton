@@ -12,8 +12,9 @@ import { crawlRegistry, githubRepo, officialMeta, type RegistryServer } from './
 import { findCandidateRepos, scanRepo, sinceDay, type Found } from './skills.ts'
 import { findAgents } from './agents.ts'
 import type { RepoMeta } from './github.ts'
-import { upsertRepos } from './repos.ts'
-import { contentHash, markRemoved, packagesForSlice, setToolRepos, toolboxCounts, toolsNeedingRepo, upsertTools, writeDownloads, type ToolRow } from './tools.ts'
+import { reposToClassify, setRepoCategories, upsertRepos } from './repos.ts'
+import { CLASSIFIER_VERSION, loadClassifier, type Classifier } from './classify.ts'
+import { contentHash, markRemoved, packagesForSlice, setToolCategories, setToolRepos, toolboxCounts, toolsNeedingRepo, toolsToClassify, upsertTools, writeDownloads, type ToolRow } from './tools.ts'
 import { DAY_MS, chunk, gunzipJson, gzipJson, log, mapLimit, step, stepTimings, utcDay } from './util.ts'
 
 type DiscoverState = {
@@ -60,9 +61,10 @@ async function importMcp(state: DiscoverState, categorise: ReturnType<typeof mak
   if (initial && !state.mcp.crawlStartedAt) state.mcp.crawlStartedAt = nowIso
   let seen = 0
   const { resumeCursor, pages } = await crawlRegistry({ cursor: initial ? state.mcp.cursor : null, updatedSince: state.mcp.updatedSince }, async (servers) => {
-    const rows = servers.map((s) => toToolRow(s, categorise, nowIso))
+    const base = servers.map((s) => toToolRow(s, categorise, nowIso))
     // Leave a reserve so linking and downloads still run on days the import is budget-bound.
-    if (writeBudgetLeft() - DISCOVER_RESERVE_WRITES < rows.length * 2) return false // resume tomorrow
+    if (writeBudgetLeft() - DISCOVER_RESERVE_WRITES < base.length * 2) return false // resume tomorrow
+    const rows = await refine(base, base.map(toolText))
     await upsertTools(rows)
     seen += rows.length
     return true
@@ -94,6 +96,22 @@ async function resolveRepos(categorise: ReturnType<typeof makeCategoriser>, now:
 }
 
 type Categorise = ReturnType<typeof makeCategoriser>
+
+let classifier: Classifier = async (texts) => texts.map(() => null)
+const CACHE_DIR = process.env.PIPELINE_CACHE_DIR ?? '.cache/pipeline'
+
+/** Text the classifier reads for a toolbox item: what it does, without format words. */
+export const toolText = (t: { name: string; title?: string | null; description?: string | null }) =>
+  stripFormatWords([t.title, t.description, t.name.split('/').pop()].filter(Boolean).join(' — '))
+
+/** Classifier first; keeps the keyword-rule category when the classifier is unsure. Stamps the version either way. */
+async function refine<T extends ToolRow & { hash: string }>(rows: T[], texts: string[]): Promise<T[]> {
+  const cats = await classifier(texts)
+  return rows.map((r, i) => {
+    const row = { ...r, category: cats[i] ?? r.category, categoryV: CLASSIFIER_VERSION }
+    return { ...row, hash: contentHash({ ...row, firstSeen: undefined, hash: undefined }) }
+  })
+}
 
 /** Job first (from the item's own description), then the repo's category as a fallback. */
 function categoriseItem(categorise: Categorise, text: string | null, repo: RepoMeta) {
@@ -161,7 +179,7 @@ async function discoverSkills(state: DiscoverState, categorise: Categorise, now:
     perRepo[r.fullName] = { skills: found.filter((f) => f.kind === 'skill').length, plugins: found.filter((f) => f.kind === 'plugin').length }
   }
   await upsertRepos(reposWithItems.map((m) => ({ ...m, category: categorise(m) })), nowIso)
-  await upsertTools(rows)
+  await upsertTools(await refine(rows, rows.map(toolText)))
   await markRemoved(scannedIds, rows.map((r) => r.slug))
   const entries = Object.entries(perRepo)
   log('skills: scanned', {
@@ -201,8 +219,24 @@ async function discoverAgents(categorise: Categorise, now: Date) {
     }),
   )
   await upsertRepos(repos.filter((r) => !r.isFork).map((m) => ({ ...m, category: categorise(m) })), nowIso)
-  await upsertTools(rows)
+  await upsertTools(await refine(rows, rows.map(toolText)))
   log('agents: written', { agents: rows.length, seeds: seeds.size })
+}
+
+/** Re-classify stored items the current classifier version hasn't seen (gradually, within the write budget). */
+async function reclassify(categorise: Categorise) {
+  const budget = Math.max(0, writeBudgetLeft() - 2000)
+  const tools = await toolsToClassify(CLASSIFIER_VERSION, Math.min(budget, 20_000))
+  const cats = await classifier(tools.map(toolText))
+  const toolRows = tools.map((t, i) => [t.id, cats[i] ?? categorise({ topics: [], description: toolText(t), language: null })] as [number, string])
+  await setToolCategories(toolRows, CLASSIFIER_VERSION)
+  // Repos: the rules place most of them from topics; only those left in "other" get the classifier.
+  const repos = await reposToClassify(CLASSIFIER_VERSION)
+  const unplaced = repos.filter((r) => categorise({ topics: JSON.parse(r.topics ?? '[]'), description: r.description, language: r.language }) === 'other')
+  const batch = unplaced.slice(0, Math.max(0, writeBudgetLeft() - 2000))
+  const repoCats = await classifier(batch.map((r) => `${r.full_name.split('/')[1].replace(/[-_]/g, ' ')} — ${r.description ?? ''} ${JSON.parse(r.topics ?? '[]').join(' ')}`))
+  await setRepoCategories(batch.map((r, i) => [r.id, repoCats[i] ?? 'other']), CLASSIFIER_VERSION)
+  log('reclassify', { tools: tools.length, toolsPlaced: cats.filter(Boolean).length, reposUnplaced: unplaced.length, reposDone: batch.length, reposPlaced: repoCats.filter(Boolean).length })
 }
 
 async function refreshDownloads(now: Date) {
@@ -229,12 +263,14 @@ async function main() {
   initWriteBudget(state.d1.written, D1_DISCOVER_WRITE_GUARD)
   log('discover state', { mcp: state.mcp, d1WrittenToday: state.d1.written })
 
+  classifier = await step('classifier', () => loadClassifier(`${CACHE_DIR}/hf`))
   try {
     await step('mcp-registry', () => importMcp(state, categorise, now))
     await step('resolve-repos', () => resolveRepos(categorise, now))
     await step('agents', () => discoverAgents(categorise, now))
     await step('skills', () => discoverSkills(state, categorise, now))
     await step('downloads', () => refreshDownloads(now))
+    await step('reclassify', () => reclassify(categorise))
   } finally {
     // Save progress even after a failure, so a partial first import resumes instead of restarting.
     state.d1 = { day: today, written: d1Usage().writtenToday }

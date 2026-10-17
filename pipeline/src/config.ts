@@ -50,7 +50,7 @@ export const FORMULA_VERSION = 1
 // Job-based categories (PLAN v2 §1). Labels live in config/categories.json; ids must match it.
 export const CATEGORIES = [
   'ai', 'devtools', 'frontend', 'backend', 'data', 'devops', 'security',
-  'gamedev', 'product', 'marketing', 'productivity', 'research', 'other',
+  'gamedev', 'product', 'marketing', 'productivity', 'research', 'business', 'other',
 ] as const
 export type Category = (typeof CATEGORIES)[number]
 

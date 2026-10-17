@@ -1,57 +1,75 @@
 {
-  "_doc": "Job-based categories shared by every item type (PLAN v2 §1). Ordered rules, first match wins: topics, then description keywords (word boundary, case-insensitive), then primary language. config/overrides.json wins. Default: other. Order matters: specific jobs (games, security) come before broad ones (ai, devtools).",
+  "_doc": "Job-based categories shared by every item type (PLAN v2 §1). 'about' describes each category for the embedding classifier (pipeline/src/classify.ts): edit it to change what lands where. Rules (topics, description keywords, language; first match wins) are the fallback when the classifier is unsure or unavailable. config/overrides.json wins over both. Default: other.",
   "categories": [
     {
       "id": "ai",
-      "label": "AI & agents"
+      "label": "AI & agents",
+      "about": "AI models, LLMs, AI agents and agent frameworks, machine learning, prompts, embeddings, RAG, chatbots, image and speech generation."
     },
     {
       "id": "devtools",
-      "label": "Developer tools"
+      "label": "Developer tools",
+      "about": "Software development tools: code editors, command-line tools, git and GitHub, testing, debugging, linters, compilers, programming languages, SDKs and libraries for developers."
     },
     {
       "id": "frontend",
-      "label": "Frontend & design"
+      "label": "Frontend & design",
+      "about": "Frontend and design: user interfaces, React and web components, CSS, design systems, Figma, icons, fonts, animation, UX."
     },
     {
       "id": "backend",
-      "label": "Backend & APIs"
+      "label": "Backend & APIs",
+      "about": "Backend and APIs: web servers, REST and GraphQL APIs, authentication, webhooks, microservices, message queues, web frameworks."
     },
     {
       "id": "data",
-      "label": "Data & databases"
+      "label": "Data & databases",
+      "about": "Data and databases: SQL and NoSQL databases, Postgres, MySQL, MongoDB, data warehouses, spreadsheets, analytics, ETL pipelines, data visualization, vector databases."
     },
     {
       "id": "devops",
-      "label": "DevOps & cloud"
+      "label": "DevOps & cloud",
+      "about": "DevOps and cloud: AWS, Azure, Google Cloud, Kubernetes, Docker, servers, deployment, CI/CD, infrastructure as code, monitoring, logging, networking, self-hosting."
     },
     {
       "id": "security",
-      "label": "Security"
+      "label": "Security",
+      "about": "Security: vulnerabilities, penetration testing, malware analysis, threat intelligence, encryption, secrets, authentication security, privacy, compliance audits of code."
     },
     {
       "id": "gamedev",
-      "label": "Game development"
+      "label": "Game development",
+      "about": "Game development: game engines like Unity, Godot and Unreal, game assets, 3D models, sprites, Blender, emulators, Minecraft and video games."
     },
     {
       "id": "product",
-      "label": "Product & project management"
+      "label": "Product & project management",
+      "about": "Product and project management: issues and tickets, Jira, Linear, Asana, roadmaps, sprints, product requirements, task tracking."
     },
     {
       "id": "marketing",
-      "label": "Marketing & content"
+      "label": "Marketing & content",
+      "about": "Marketing and content: SEO, social media, Twitter, LinkedIn, YouTube, TikTok, advertising campaigns, newsletters, blogs, copywriting, video and content creation."
     },
     {
       "id": "productivity",
-      "label": "Productivity & automation"
+      "label": "Productivity & automation",
+      "about": "Productivity and automation: email, calendar, notes, documents and PDFs, Slack, Notion, Obsidian, browser automation, web search and scraping, workflow automation, personal assistants."
     },
     {
       "id": "research",
-      "label": "Research & science"
+      "label": "Research & science",
+      "about": "Research and science: academic papers, arXiv, PubMed, biology, chemistry, physics, mathematics, health and medicine, datasets, scientific computing, education and learning."
+    },
+    {
+      "id": "business",
+      "label": "Business & finance",
+      "about": "Business and finance: payments, invoices, accounting, banking, taxes, stocks, trading, crypto and blockchain, e-commerce, shops and orders, CRM, sales leads, legal, laws and regulations, HR, real estate, travel booking."
     },
     {
       "id": "other",
-      "label": "Other"
+      "label": "Other",
+      "about": "Other software that fits none of the categories above."
     }
   ],
   "rules": [
@@ -150,6 +168,78 @@
         "secrets"
       ],
       "languages": []
+    },
+    {
+      "id": "business",
+      "topics": [
+        "finance",
+        "fintech",
+        "payments",
+        "crypto",
+        "cryptocurrency",
+        "blockchain",
+        "defi",
+        "ethereum",
+        "bitcoin",
+        "trading",
+        "stock-market",
+        "accounting",
+        "invoicing",
+        "ecommerce",
+        "e-commerce",
+        "shopify",
+        "crm",
+        "legal",
+        "legaltech",
+        "real-estate",
+        "hr"
+      ],
+      "keywords": [
+        "payments",
+        "payment",
+        "invoice",
+        "invoices",
+        "invoicing",
+        "accounting",
+        "bookkeeping",
+        "tax",
+        "taxes",
+        "crypto",
+        "cryptocurrency",
+        "blockchain",
+        "defi",
+        "dex",
+        "token prices",
+        "stock",
+        "stocks",
+        "trading",
+        "market data",
+        "forex",
+        "bank",
+        "banking",
+        "finance",
+        "financial",
+        "fintech",
+        "crm",
+        "sales leads",
+        "e-commerce",
+        "ecommerce",
+        "shopify",
+        "legal",
+        "legislation",
+        "statutes",
+        "insurance",
+        "real estate",
+        "payroll",
+        "procurement",
+        "erp",
+        "sec filings",
+        "usdc",
+        "x402"
+      ],
+      "languages": [
+        "Solidity"
+      ]
     },
     {
       "id": "research",

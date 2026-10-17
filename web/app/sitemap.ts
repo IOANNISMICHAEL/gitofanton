@@ -6,7 +6,7 @@ export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = readMeta()?.generatedAt ?? new Date().toISOString();
-  const urls = new Set<string>(["/"]);
+  const urls = new Set<string>(["/", "/toolbox/"]);
   for (const list of Object.keys(LISTS) as ListId[]) {
     for (const w of WINDOWS) {
       urls.add(viewHref(list, w.id));

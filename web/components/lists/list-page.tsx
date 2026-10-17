@@ -10,6 +10,7 @@ import {
   SITE_URL,
   WINDOWS,
   categoryLabel,
+  isToolList,
   languageName,
   viewDataPath,
   viewHref,
@@ -29,8 +30,9 @@ function describe({ list, window, category = "all", lang = null }: ViewProps) {
   const scope = lang ? `${languageName(lang)} ` : category !== "all" ? `${categoryLabel(category)} ` : "";
   const when = window === "all" ? "of all time" : windowOf(window).phrase;
   const heading = lang || category !== "all" ? `${L.title}: ${lang ? languageName(lang) : categoryLabel(category)}` : L.title;
-  const title =
-    list === "top"
+  const title = isToolList(list)
+    ? `${window === "all" ? "Most starred" : "Trending"} ${scope}${L.noun} ${window === "all" ? "" : when}`.trim()
+    : list === "top"
       ? `Most starred ${scope}GitHub repositories`
       : list === "gems"
         ? `Hidden gems: fast-growing small ${scope}GitHub repositories ${when}`
@@ -68,19 +70,30 @@ export function ListPage(p: ViewProps) {
       name: describe(p).title,
       url: `${SITE_URL}${href}`,
       numberOfItems: Math.min(view.total, 500),
-      itemListElement: first.map((it, i) => ({
-        "@type": "ListItem",
-        position: i + 1,
-        item: { "@type": "SoftwareSourceCode", name: it.n, url: `https://github.com/${it.n}`, codeRepository: `https://github.com/${it.n}`, ...(it.l ? { programmingLanguage: it.l } : {}) },
-      })),
+      itemListElement: first.map((it, i) => {
+        const repo = it.ty === "repo" ? it.n : it.rp;
+        const url = it.ty === "repo" ? `https://github.com/${it.n}` : (it.u ?? (repo ? `https://github.com/${repo}` : undefined));
+        return {
+          "@type": "ListItem",
+          position: i + 1,
+          item: {
+            "@type": "SoftwareSourceCode",
+            name: it.n,
+            ...(url ? { url } : {}),
+            ...(repo ? { codeRepository: `https://github.com/${repo}` } : {}),
+            ...(it.l ? { programmingLanguage: it.l } : {}),
+          },
+        };
+      }),
     },
     {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Git of Anton", item: `${SITE_URL}/` },
-        { "@type": "ListItem", position: 2, name: L.title, item: `${SITE_URL}/${list}/` },
-        ...(category !== "all" || lang ? [{ "@type": "ListItem", position: 3, name: heading.split(": ")[1], item: `${SITE_URL}${href}` }] : []),
+        ...(isToolList(list) ? [{ "@type": "ListItem", position: 2, name: "Toolbox", item: `${SITE_URL}/toolbox/` }] : []),
+        { "@type": "ListItem", position: isToolList(list) ? 3 : 2, name: L.title, item: `${SITE_URL}${L.base}/` },
+        ...(category !== "all" || lang ? [{ "@type": "ListItem", position: isToolList(list) ? 4 : 3, name: heading.split(": ")[1], item: `${SITE_URL}${href}` }] : []),
       ],
     },
   ];
@@ -93,7 +106,13 @@ export function ListPage(p: ViewProps) {
           <nav aria-label="Breadcrumb" className="mb-3 text-sm text-muted-foreground">
             <Link href="/" className="hover:text-foreground">Home</Link>
             <span aria-hidden> / </span>
-            <Link href={`/${list}/`} className="hover:text-foreground">{L.title}</Link>
+            {isToolList(list) ? (
+              <>
+                <Link href="/toolbox/" className="hover:text-foreground">Toolbox</Link>
+                <span aria-hidden> / </span>
+              </>
+            ) : null}
+            <Link href={`${L.base}/`} className="hover:text-foreground">{L.title}</Link>
           </nav>
           <h1 className="font-display text-5xl tracking-tight text-foreground sm:text-6xl">{heading}</h1>
           <p className="mt-3 max-w-2xl text-muted-foreground">{L.blurb}</p>
@@ -122,7 +141,7 @@ export function ListPage(p: ViewProps) {
           <nav aria-label="Category" className="-mx-1 flex gap-1 overflow-x-auto pb-1">
             {[{ id: "all", label: "All" }, ...CATEGORIES].map((c) => {
               const active = !lang && category === c.id;
-              const count = c.id === "all" ? null : meta?.categoryCounts?.[c.id];
+              const count = c.id === "all" || isToolList(list) ? null : meta?.categoryCounts?.[c.id];
               return (
                 <Link
                   key={c.id}
@@ -159,6 +178,7 @@ export function ListPage(p: ViewProps) {
             Updated <time dateTime={meta.generatedAt}>{new Date(meta.generatedAt).toUTCString().replace(":00 GMT", " UTC")}</time>
             {" · "}
             {meta.trackedRepos.toLocaleString("en-US")} repositories tracked
+            {isToolList(list) && meta.toolbox ? ` · ${Object.values(meta.toolbox.byType).reduce((n, t) => n + t.total, 0).toLocaleString("en-US")} toolbox items` : ""}
           </p>
         ) : null}
       </div>
