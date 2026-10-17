@@ -1,0 +1,4 @@
+{
+  "_doc": "Language filter on GitHub lists. Fixed so URLs stay stable for search engines (PLAN v2 §1, §5).",
+  "languages": ["Python", "TypeScript", "JavaScript", "Rust", "Go", "Java", "C++", "C", "C#", "Swift", "Kotlin", "Ruby", "PHP", "Shell", "Jupyter Notebook"]
+}

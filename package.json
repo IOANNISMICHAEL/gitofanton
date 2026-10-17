@@ -1,0 +1,21 @@
+{
+  "name": "git-of-anton",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck:worker": "tsc -p worker",
+    "deploy": "wrangler deploy",
+    "typecheck:pipeline": "tsc -p pipeline",
+    "test:pipeline": "node --test \"pipeline/test/*.test.ts\"",
+    "pipeline": "node pipeline/src/run.ts"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261016.1",
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.151.1"
+  }
+}

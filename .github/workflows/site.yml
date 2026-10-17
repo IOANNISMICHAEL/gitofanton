@@ -1,0 +1,55 @@
+name: site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: site
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # Builds and deploys run only in the public copy (unlimited free minutes); see mirror.yml.
+    if: github.repository == 'IOANNISMICHAEL/gitofanton'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            web/pnpm-lock.yaml
+
+      - name: Install
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --dir web install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --dir web lint
+      - name: Typecheck
+        run: |
+          pnpm --dir web typecheck
+          pnpm typecheck:worker
+          pnpm typecheck:pipeline
+      - name: Test pipeline
+        run: pnpm test:pipeline
+      # Catches build errors early; the deployed build is made by data.yml from fresh data.
+      - name: Build web (no data)
+        run: pnpm --dir web build
+
+  # Deploy through the data job: it runs the pipeline, builds pages from its data, and deploys.
+  data:
+    needs: build
+    uses: ./.github/workflows/data.yml
+    secrets: inherit
+    permissions:
+      contents: write # the called job's keep-alive commit; a caller must grant what its callee asks for
