@@ -69,15 +69,16 @@ export async function writeDailyStats(rows: [number, string, number, number, num
 
 /** Sum finalized daily_stats over the 7- and 30-day windows ending on `lastDay` (inclusive). */
 export async function windowSums(from30: string, from7: string, lastDay: string) {
-  const r = await d1<{ id: number; s7: number; s30: number; f7: number; a7: number; f30: number }>(
+  const r = await d1<{ id: number; s7: number; s30: number; f7: number; a7: number; f30: number; sAll: number }>(
     `SELECT repo_id AS id,
-            SUM(CASE WHEN day >= ?2 THEN stars ELSE 0 END) AS s7, SUM(stars) AS s30,
-            SUM(CASE WHEN day >= ?2 THEN forks ELSE 0 END) AS f7, SUM(forks) AS f30,
-            SUM(CASE WHEN day >= ?2 THEN pushes + issues ELSE 0 END) AS a7
-     FROM daily_stats WHERE day >= ?1 AND day <= ?3 GROUP BY repo_id`,
+            SUM(CASE WHEN day >= ?2 THEN stars ELSE 0 END) AS s7, SUM(CASE WHEN day >= ?1 THEN stars ELSE 0 END) AS s30,
+            SUM(CASE WHEN day >= ?2 THEN forks ELSE 0 END) AS f7, SUM(CASE WHEN day >= ?1 THEN forks ELSE 0 END) AS f30,
+            SUM(CASE WHEN day >= ?2 THEN pushes + issues ELSE 0 END) AS a7,
+            SUM(stars) AS sAll
+     FROM daily_stats WHERE day <= ?3 GROUP BY repo_id`,
     [from30, from7, lastDay],
   )
-  const days = await d1<{ n: number }>(`SELECT COUNT(DISTINCT day) AS n FROM daily_stats WHERE day >= ?1 AND day <= ?2`, [from30, lastDay])
+  const days = await d1<{ n: number }>(`SELECT COUNT(DISTINCT day) AS n FROM daily_stats WHERE day <= ?1`, [lastDay])
   return { rows: r.results, historyDays: days.results[0]?.n ?? 0 }
 }
 

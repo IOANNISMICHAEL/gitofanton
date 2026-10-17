@@ -30,7 +30,7 @@ export type Item = {
   f?: string;
 };
 
-export type View = { list: ListId; window: WindowId; category: string; lang: string | null; total: number; items: Item[] };
+export type View = { list: ListId; window: WindowId | null; category: string; lang: string | null; total: number; items: Item[] };
 
 export type Meta = {
   generatedAt: string;
@@ -38,6 +38,8 @@ export type Meta = {
   counts: Record<string, number>;
   categoryCounts: Record<string, number>;
   toolbox?: { byType: Record<string, { total: number; withRepo: number; withPackage: number }>; withDownloads: number };
+  starsToday?: number;
+  trendingTopics?: string[];
   languages: { name: string; slug: string }[];
   trackedRepos: number;
   historyDays: number;
@@ -69,7 +71,9 @@ export type ListId = "trending" | "rising" | "gems" | "top" | "skills" | "mcp" |
 type ListDef = {
   title: string;
   noun: string; // what one list holds, plural, for counts and titles
-  defaultWindow: WindowId;
+  /** Time tabs this list has (null = a single list, no tabs). The first is the default. */
+  windows: WindowId[] | null;
+  defaultWindow: WindowId | null;
   blurb: string;
   hasLanguages: boolean;
   base: string; // URL path of the list
@@ -81,6 +85,7 @@ export const LISTS: Record<ListId, ListDef> = {
   trending: {
     title: "Trending",
     noun: "Trending",
+    windows: ["today", "week", "month", "all"],
     defaultWindow: "today",
     blurb: "GitHub repositories gaining stars fastest, adjusted for size so a 500-star jump on a small project counts more than on a giant.",
     hasLanguages: true,
@@ -90,8 +95,9 @@ export const LISTS: Record<ListId, ListDef> = {
   rising: {
     title: "Rising",
     noun: "Rising",
-    defaultWindow: "week",
-    blurb: "GitHub repositories created in the last 90 days, ranked by stars gained.",
+    windows: null,
+    defaultWindow: null,
+    blurb: "New GitHub repositories (created in the last 90 days), ranked by stars gained this week.",
     hasLanguages: false,
     base: "/rising",
     section: "GitHub",
@@ -99,7 +105,8 @@ export const LISTS: Record<ListId, ListDef> = {
   gems: {
     title: "Hidden gems",
     noun: "Hidden gem",
-    defaultWindow: "week",
+    windows: null,
+    defaultWindow: null,
     blurb: "Smaller projects (50 to 2,000 stars) growing fast relative to their size, with real activity behind the stars.",
     hasLanguages: false,
     base: "/gems",
@@ -108,8 +115,9 @@ export const LISTS: Record<ListId, ListDef> = {
   top: {
     title: "Most starred",
     noun: "Most starred",
+    windows: ["week", "month", "all"],
     defaultWindow: "all",
-    blurb: "The most-starred GitHub repositories we track, across every category.",
+    blurb: "The repositories that gained the most stars this week or month, and the most-starred of all time.",
     hasLanguages: false,
     base: "/top",
     section: "GitHub",
@@ -117,6 +125,7 @@ export const LISTS: Record<ListId, ListDef> = {
   skills: {
     title: "Agent skills",
     noun: "skills",
+    windows: ["today", "week", "month", "all"],
     defaultWindow: "week",
     blurb: "Agent Skills (SKILL.md) from GitHub, ranked by how fast the repo behind them is growing. At most three per repo.",
     hasLanguages: false,
@@ -126,6 +135,7 @@ export const LISTS: Record<ListId, ListDef> = {
   mcp: {
     title: "MCP servers",
     noun: "MCP servers",
+    windows: ["today", "week", "month", "all"],
     defaultWindow: "week",
     blurb: "Model Context Protocol servers from the official MCP Registry, ranked by repo growth, with weekly npm and PyPI downloads.",
     hasLanguages: false,
@@ -136,6 +146,7 @@ export const LISTS: Record<ListId, ListDef> = {
   agents: {
     title: "Agents & plugins",
     noun: "agents and plugins",
+    windows: ["today", "week", "month", "all"],
     defaultWindow: "week",
     blurb: "Coding agents and Claude Code plugins, ranked by how fast their GitHub repos are growing.",
     hasLanguages: false,
@@ -147,15 +158,18 @@ export const LISTS: Record<ListId, ListDef> = {
 export const isToolList = (list: ListId) => LISTS[list].section === "Toolbox";
 
 /** Canonical URL path of a list view. The default view of a list lives at /{list}/. */
-export function viewHref(list: ListId, window: WindowId, category = "all", lang: string | null = null) {
+/** Canonical URL of a view. Lists without time tabs: /{list}/[{category}/]. Default window: /{list}/. */
+export function viewHref(list: ListId, window: WindowId | null, category = "all", lang: string | null = null) {
   const base = LISTS[list].base;
+  if (!window) return category === "all" ? `${base}/` : `${base}/${category}/`;
   if (lang) return `${base}/${window}/lang/${lang}/`;
   if (category === "all") return window === LISTS[list].defaultWindow ? `${base}/` : `${base}/${window}/`;
   return `${base}/${window}/${category}/`;
 }
 
-export function viewDataPath(list: ListId, window: WindowId, category = "all", lang: string | null = null) {
+export function viewDataPath(list: ListId, window: WindowId | null, category = "all", lang: string | null = null) {
   if (isToolList(list)) return `/data/toolbox/${list}/${window}/${category}.json`;
+  if (!window) return `/data/lists/${list}/${category}.json`;
   return lang ? `/data/lists/${list}/${window}/lang/${lang}.json` : `/data/lists/${list}/${window}/${category}.json`;
 }
 

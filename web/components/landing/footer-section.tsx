@@ -9,13 +9,9 @@ const footerLinks = {
   ],
   Explore: [
     { name: "Agent toolbox", href: "/toolbox/" },
-    { name: "Radar", href: "/radar/" },
-    { name: "News", href: "/news/" },
   ],
   Site: [
-    { name: "Methodology", href: "/methodology/" },
-    { name: "About", href: "/about/" },
-    { name: "Promote", href: "/promote/" },
+    { name: "Categories", href: "/categories/" },
   ],
 };
 

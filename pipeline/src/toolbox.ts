@@ -129,6 +129,14 @@ export function writeToolbox(outDir: string, tools: ToolRead[], downloads: Map<n
       for (const c of CATEGORIES) write(c, ranked.filter((x) => x.t.category === c))
     }
   }
+  // Per-category counts (listed items of every type) for the front page's category cards.
+  const byCategory: Record<string, number> = {}
+  for (const t of tools) {
+    if (t.status !== 'active') continue
+    const repo = t.repo_id ? repos.get(t.repo_id) : undefined
+    if (isListed(t, repo, downloads.get(t.id), publishers)) byCategory[t.category] = (byCategory[t.category] ?? 0) + 1
+  }
+  writeFileSync(join(outDir, 'data', 'toolbox', 'meta.json'), JSON.stringify({ counts, byCategory }))
   log('toolbox', counts)
   return { files, counts }
 }

@@ -13,8 +13,9 @@ function readJson<T>(rel: string): T | null {
   }
 }
 
-export function readView(list: ListId, window: WindowId, category = "all", lang: string | null = null): View {
+export function readView(list: ListId, window: WindowId | null, category = "all", lang: string | null = null): View {
   return readJson<View>(viewDataPath(list, window, category, lang).replace(/^\/data\//, "")) ?? { list, window, category, lang, total: 0, items: [] };
 }
 
 export const readMeta = () => readJson<Meta>("meta.json");
+export const readToolboxMeta = () => readJson<{ counts: Record<string, number>; byCategory: Record<string, number> }>("toolbox/meta.json");

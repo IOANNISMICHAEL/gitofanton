@@ -23,20 +23,24 @@ import { cn } from "@/lib/utils";
 
 const OG_IMAGE = { url: "/og.png", width: 1200, height: 630, alt: "Git of Anton" };
 
-type ViewProps = { list: ListId; window: WindowId; category?: string; lang?: string | null };
+type ViewProps = { list: ListId; window: WindowId | null; category?: string; lang?: string | null };
 
 function describe({ list, window, category = "all", lang = null }: ViewProps) {
   const L = LISTS[list];
   const scope = lang ? `${languageName(lang)} ` : category !== "all" ? `${categoryLabel(category)} ` : "";
-  const when = window === "all" ? "of all time" : windowOf(window).phrase;
+  const when = !window ? "" : window === "all" ? (list === "trending" ? "since tracking began" : "of all time") : windowOf(window).phrase;
   const heading = lang || category !== "all" ? `${L.title}: ${lang ? languageName(lang) : categoryLabel(category)}` : L.title;
   const title = isToolList(list)
     ? `${window === "all" ? "Most starred" : "Trending"} ${scope}${L.noun} ${window === "all" ? "" : when}`.trim()
     : list === "top"
-      ? `Most starred ${scope}GitHub repositories`
+      ? window === "all"
+        ? `Most starred ${scope}GitHub repositories of all time`
+        : `Most stars gained ${when}: ${scope}GitHub repositories`
       : list === "gems"
-        ? `Hidden gems: fast-growing small ${scope}GitHub repositories ${when}`
-        : `${L.title} ${scope}GitHub repositories ${when}`;
+        ? `Hidden gems: fast-growing small ${scope}GitHub repositories`
+        : list === "rising"
+          ? `Rising: new ${scope}GitHub repositories gaining stars`
+          : `${L.title} ${scope}GitHub repositories ${when}`;
   const description = `${L.blurb} ${scope ? `Showing ${scope.trim()} projects. ` : ""}Updated every 4 hours.`;
   return { heading, title, description };
 }
@@ -120,8 +124,9 @@ export function ListPage(p: ViewProps) {
 
         <div className="mb-4 space-y-3 border-b border-border pb-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
+            {L.windows ? (
             <nav aria-label="Time window" className="inline-flex rounded-md border border-border p-0.5">
-              {WINDOWS.map((w) => (
+              {WINDOWS.filter((w) => L.windows!.includes(w.id)).map((w) => (
                 <Link
                   key={w.id}
                   href={viewHref(list, w.id, category, lang)}
@@ -131,11 +136,12 @@ export function ListPage(p: ViewProps) {
                     w.id === window ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {w.label}
+                  {list === "trending" && w.id === "all" ? "Since tracking" : w.label}
                 </Link>
               ))}
             </nav>
-            {L.hasLanguages ? <LanguageSelect list={list} window={window} current={lang} languages={LANGUAGES} /> : null}
+            ) : null}
+            {L.hasLanguages && window ? <LanguageSelect list={list} window={window} current={lang} languages={LANGUAGES} /> : null}
           </div>
 
           <nav aria-label="Category" className="-mx-1 flex gap-1 overflow-x-auto pb-1">
@@ -187,6 +193,8 @@ export function ListPage(p: ViewProps) {
 }
 
 // ---- static params shared by every list route ----
-export const otherWindows = (list: ListId) => WINDOWS.filter((w) => w.id !== LISTS[list].defaultWindow).map((w) => ({ window: w.id }));
-export const windowCategoryParams = () => WINDOWS.flatMap((w) => CATEGORIES.map((c) => ({ window: w.id, category: c.id })));
-export const windowLangParams = () => WINDOWS.flatMap((w) => LANGUAGES.map((l) => ({ window: w.id, lang: l.slug })));
+const windowsOf = (list: ListId) => LISTS[list].windows ?? [];
+export const otherWindows = (list: ListId) => windowsOf(list).filter((w) => w !== LISTS[list].defaultWindow).map((w) => ({ window: w }));
+export const windowCategoryParams = (list: ListId) => windowsOf(list).flatMap((w) => CATEGORIES.map((c) => ({ window: w, category: c.id })));
+export const windowLangParams = () => windowsOf("trending").flatMap((w) => LANGUAGES.map((l) => ({ window: w, lang: l.slug })));
+export const categoryParams = () => CATEGORIES.map((c) => ({ category: c.id }));

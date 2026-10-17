@@ -78,7 +78,7 @@ async function rollover(state: State, today: string) {
 
   const lastDay = addDays(today, -1)
   const { rows: sums, historyDays } = await windowSums(addDays(today, -29), addDays(today, -6), lastDay)
-  await saveWindows({ asOf: lastDay, historyDays, sums: Object.fromEntries(sums.map((s) => [s.id, [s.s7, s.s30, s.f7, s.a7, s.f30]])) })
+  await saveWindows({ asOf: lastDay, historyDays, sums: Object.fromEntries(sums.map((s) => [s.id, [s.s7, s.s30, s.f7, s.a7, s.f30, s.sAll]])) })
   state.day = today
   for (const d of Object.keys(state.activity)) if (d < addDays(today, -1)) delete state.activity[d]
 }
@@ -205,7 +205,7 @@ async function main() {
     const t = state.repos[r.id]
     if (!t) continue
     const ov = overrides[r.full_name] ?? {}
-    const s = win.sums[r.id] ?? [0, 0, 0, 0, 0]
+    const s = win.sums[r.id] ?? [0, 0, 0, 0, 0, 0]
     const g1 = Math.max(0, t[1] - t[3])
     const f1 = Math.max(0, t[2] - t[4])
     const a = todayAct[r.id] ?? [0, 0, 0, 0]
@@ -223,7 +223,7 @@ async function main() {
       // Rules first (topics are reliable); the classifier's stored pick (discover.yml) for what they leave in "other".
       category: ov.category ?? pickCategory(categorise({ topics, description: r.description, language: r.language }), r),
       stars: t[1],
-      gain: { today: g1, week: g1 + s[0], month: g1 + s[1], all: t[1] },
+      gain: { today: g1, week: g1 + s[0], month: g1 + s[1], all: g1 + (s[5] ?? s[1]) },
       forks: { today: f1, week: f1 + s[2], month: f1 + (s[4] ?? s[2]), all: t[2] },
       activity7: s[3] + a[2] + a[3],
       isFork: !!r.is_fork,

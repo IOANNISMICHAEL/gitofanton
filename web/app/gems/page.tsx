@@ -1,7 +1,6 @@
 import { ListPage, viewMetadata } from "@/components/lists/list-page";
-import { LISTS } from "@/lib/data";
 
-const view = { list: "gems", window: LISTS.gems.defaultWindow } as const;
+const view = { list: "gems", window: null } as const;
 export const metadata = viewMetadata(view);
 export default function Page() {
   return <ListPage {...view} />;

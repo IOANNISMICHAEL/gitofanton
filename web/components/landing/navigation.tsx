@@ -10,8 +10,7 @@ const navLinks = [
   { name: "Gems",     href: "/gems/"     },
   { name: "Top",      href: "/top/"      },
   { name: "Toolbox",  href: "/toolbox/"  },
-  { name: "Radar",    href: "/radar/"    },
-  { name: "News",     href: "/news/"     },
+  { name: "Categories", href: "/categories/" },
 ];
 
 export function Navigation() {
@@ -64,11 +63,6 @@ export function Navigation() {
             ))}
           </div>
 
-          <div className="hidden md:flex items-center gap-4">
-            <Link href="/promote/" className="text-sm text-foreground/70 hover:text-foreground transition-colors">
-              Promote
-            </Link>
-          </div>
 
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -91,7 +85,7 @@ export function Navigation() {
       >
         <div className="flex flex-col h-full px-8 pt-28 pb-8">
           <div className="flex-1 flex flex-col justify-center gap-8">
-            {[...navLinks, { name: "Promote", href: "/promote/" }].map((link, i) => (
+            {navLinks.map((link, i) => (
               <Link
                 key={link.name}
                 href={link.href}

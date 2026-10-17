@@ -20,17 +20,19 @@ const SORTS: Record<SortId, { label: string; key: (i: Item) => number | string }
   downloads: { label: "Downloads (week)", key: (i) => i.dl ?? -1 },
 };
 
-export function sortOptions(list: ListId, window: WindowId): SortId[] {
+export function sortOptions(list: ListId, window: WindowId | null): SortId[] {
   const dl: SortId[] = LISTS[list].hasDownloads ? ["downloads"] : [];
-  if (window === "all") return ["total", ...dl, "newest", "updated"];
+  if (list === "top" && window === "all") return ["total", "newest", "updated"];
+  if (isToolList(list) && window === "all") return ["total", ...dl, "newest", "updated"];
   const momentum: SortId[] = list === "trending" || isToolList(list) ? ["momentum"] : [];
   return [...momentum, "gained", "total", ...dl, "growth", "newest", "updated", "forks"];
 }
 
 /** The order the pipeline wrote (the list's own ranking). */
-export function defaultSort(list: ListId, window: WindowId): SortId {
-  if (window === "all" || list === "top") return "total";
-  if (isToolList(list) || list === "trending") return "momentum";
+export function defaultSort(list: ListId, window: WindowId | null): SortId {
+  if (list === "top") return window === "all" ? "total" : "gained";
+  if (isToolList(list)) return window === "all" ? "total" : "momentum";
+  if (list === "trending") return "momentum";
   return list === "rising" ? "gained" : "growth";
 }
 
@@ -58,7 +60,7 @@ export function ListClient({
   asOf,
 }: {
   list: ListId;
-  window: WindowId;
+  window: WindowId | null;
   initialItems: Item[];
   total: number;
   dataPath: string;
@@ -110,7 +112,8 @@ export function ListClient({
   const items = useMemo(() => sortItems(full ?? initialItems, sort, natural), [full, initialItems, sort, natural]);
   const totalPages = Math.max(1, Math.ceil(Math.min(full?.length ?? total, 500) / PAGE_SIZE));
   const shown = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const gainLabel = window === "all" ? null : windowOf(window).phrase;
+  // Lists without tabs (rising, gems) show this week's gain; All time shows totals only, except Trending.
+  const gainLabel = !window ? "this week" : window === "all" ? (list === "trending" ? "since 17 Oct" : null) : windowOf(window).phrase;
 
   const syncUrl = (nextSort: SortId, nextPage: number) => {
     const q = new URLSearchParams(location.search);

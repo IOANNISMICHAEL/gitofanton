@@ -4,7 +4,7 @@
 import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { CATEGORIES, FORMULA_VERSION, OUT_FILE_LIMIT, QUADRANTS, RADAR_RINGS, RADAR_SIZE, VIEW_SIZE } from './config.ts'
-import { LISTS, WINDOWS, isEligible, isNew, rank, trending, type ListName, type Scored, type Window } from './score.ts'
+import { LISTS, LIST_WINDOWS, gainWindow, isEligible, isNew, rank, trending, type ListName, type Scored, type Window } from './score.ts'
 import { log } from './util.ts'
 
 export type Item = {
@@ -25,7 +25,7 @@ export type Item = {
   f?: string // flag reason
 }
 
-export type View = { list: ListName; window: Window; category: string; lang: string | null; total: number; items: Item[] }
+export type View = { list: ListName; window: Window | null; category: string; lang: string | null; total: number; items: Item[] }
 
 const day = (iso: string | null) => (iso ? iso.slice(0, 10) : null)
 
@@ -94,24 +94,26 @@ export function writeAll(outDir: string, repos: Scored[], now: Date, meta: Recor
   }
   // No timestamp in view files: an unchanged view keeps the same bytes and isn't re-uploaded.
   const writeView = (rel: string, v: Omit<View, 'items' | 'total'>, ranked: Scored[]) => {
-    write(rel, { ...v, total: ranked.length, items: ranked.slice(0, VIEW_SIZE).map((r) => toItem(r, v.window, now)) } satisfies View)
+    const gw = gainWindow(v.list, v.window)
+    write(rel, { ...v, total: ranked.length, items: ranked.slice(0, VIEW_SIZE).map((r) => toItem(r, gw, now)) } satisfies View)
   }
 
   const counts: Record<string, number> = {}
   const categoryCounts: Record<string, number> = {}
   for (const list of LISTS) {
-    for (const w of WINDOWS) {
+    for (const w of LIST_WINDOWS[list]) {
       const ranked = rank(list, repos, w, now)
-      counts[`${list}.${w}`] = ranked.length
-      writeView(`lists/${list}/${w}/all.json`, { list, window: w, category: 'all', lang: null }, ranked)
+      const dir = w ? `lists/${list}/${w}` : `lists/${list}`
+      counts[w ? `${list}.${w}` : list] = ranked.length
+      writeView(`${dir}/all.json`, { list, window: w, category: 'all', lang: null }, ranked)
       for (const c of CATEGORIES) {
         const inCat = ranked.filter((r) => r.category === c)
         if (list === 'top' && w === 'all') categoryCounts[c] = inCat.length
-        writeView(`lists/${list}/${w}/${c}.json`, { list, window: w, category: c, lang: null }, inCat)
+        writeView(`${dir}/${c}.json`, { list, window: w, category: c, lang: null }, inCat)
       }
-      if (list === 'trending') {
+      if (list === 'trending' && w) {
         for (const lang of LANGUAGES) {
-          writeView(`lists/trending/${w}/lang/${slug(lang)}.json`, { list, window: w, category: 'all', lang: slug(lang) }, ranked.filter((r) => r.language === lang))
+          writeView(`${dir}/lang/${slug(lang)}.json`, { list, window: w, category: 'all', lang: slug(lang) }, ranked.filter((r) => r.language === lang))
         }
       }
     }
@@ -124,8 +126,16 @@ export function writeAll(outDir: string, repos: Scored[], now: Date, meta: Recor
 
   const radar = buildRadar(trending(repos, 'week'))
   write('radar.json', { generatedAt, ...radar })
+  // Front page: total stars gained today, and the topics most common among this week's trending repos.
+  const eligible = repos.filter((r) => isEligible(r))
+  const starsToday = eligible.reduce((n, r) => n + r.gain.today, 0)
+  const topicCounts = new Map<string, number>()
+  for (const r of trending(repos, 'week').slice(0, 300)) for (const t of r.topics) topicCounts.set(t, (topicCounts.get(t) ?? 0) + 1)
+  const trendingTopics = [...topicCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 14).map(([t]) => t)
   write('meta.json', {
     generatedAt,
+    starsToday,
+    trendingTopics,
     formulaVersion: FORMULA_VERSION,
     counts,
     categoryCounts,

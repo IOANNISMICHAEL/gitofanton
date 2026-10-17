@@ -21,8 +21,8 @@ export type State = {
   trust?: Record<string, TrustRecord> // fake-star verdicts by repo id (absent in state written before M4)
 }
 
-/** Window sums from finalized daily_stats rows: id → [stars7, stars30, forks7, activity7, forks30]. forks30 is absent in windows written before 2026-10-17. */
-export type Windows = { asOf: string | null; historyDays: number; sums: Record<string, [number, number, number, number, number?]> }
+/** Window sums from finalized daily_stats rows: id → [stars7, stars30, forks7, activity7, forks30, starsAllHistory]. The last two are absent in windows written before 2026-10-18. */
+export type Windows = { asOf: string | null; historyDays: number; sums: Record<string, [number, number, number, number, number?, number?]> }
 
 export function emptyState(day: string): State {
   return { v: 1, day, lastHour: null, d1: { day, written: 0 }, repos: {}, rejected: {}, activity: {}, seed: { built: false, queue: [], recentDay: null } }

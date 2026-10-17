@@ -3,7 +3,7 @@ import type { WindowId } from "@/lib/data";
 
 type Params = Promise<{ window: WindowId; category: string }>;
 export const dynamicParams = false;
-export const generateStaticParams = windowCategoryParams;
+export const generateStaticParams = () => windowCategoryParams("mcp");
 export async function generateMetadata({ params }: { params: Params }) {
   const { window, category } = await params;
   return viewMetadata({ list: "mcp", window, category });

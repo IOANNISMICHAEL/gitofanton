@@ -6,12 +6,12 @@ import { makeCategoriser, loadRules } from '../src/categorise.ts'
 
 const now = new Date('2026-10-17T12:00:00Z')
 let nextId = 1
-function repo(p: Partial<Scored> & { stars: number; week?: number; forksWeek?: number }): Scored {
-  const { week = 0, forksWeek = 0, ...rest } = p
+function repo(p: Partial<Scored> & { stars: number; week?: number; forksWeek?: number; all?: number }): Scored {
+  const { week = 0, forksWeek = 0, all = week, ...rest } = p
   return {
     id: nextId++, fullName: `o/r${nextId}`, description: null, language: 'TypeScript', topics: [], avatarUrl: null,
     createdAt: '2020-01-01T00:00:00Z', pushedAt: null, category: 'other',
-    gain: { today: 0, week, month: week, all: p.stars }, forks: { today: 0, week: forksWeek, month: forksWeek, all: 0 },
+    gain: { today: 0, week, month: week, all }, forks: { today: 0, week: forksWeek, month: forksWeek, all: 0 },
     activity7: 0, isFork: false, isArchived: false, hidden: false, flag: null, ...rest,
   }
 }
@@ -30,17 +30,25 @@ test('trending prefers smaller repos at equal gain and drops ineligible ones', (
   assert.equal(isEligible(flagged, true), true)
 })
 
-test('All time ranks by total stars, including repos with no recent gain', () => {
-  const a = repo({ stars: 900 })
-  const b = repo({ stars: 5000, week: 1 })
-  assert.deepEqual(trending([a, b], 'all').map((r) => r.id), [b.id, a.id])
-  assert.deepEqual(rank('top', [a, b], 'today', now).map((r) => r.id), [b.id, a.id])
+test('Top: most stars gained in the window; All time: most stars overall', () => {
+  const big = repo({ stars: 90_000, week: 100 })
+  const fast = repo({ stars: 900, week: 400 })
+  const idle = repo({ stars: 5000 })
+  assert.deepEqual(top([big, fast, idle], 'week').map((r) => r.id), [fast.id, big.id]) // raw gain, idle left out
+  assert.deepEqual(top([big, fast, idle], 'all').map((r) => r.id), [big.id, idle.id, fast.id])
+  assert.deepEqual(rank('top', [big, fast], 'all', now).map((r) => r.id), [big.id, fast.id])
+})
+
+test('Trending All time ranks by stars gained since tracking began, size-adjusted', () => {
+  const a = repo({ stars: 900, all: 300 })
+  const b = repo({ stars: 50_000, all: 400 }) // 400 / log10(50,100) = 85 < 300 / log10(1,000) = 100
+  assert.deepEqual(trending([a, b], 'all').map((r) => r.id), [a.id, b.id])
 })
 
 test('rising only includes repos created within 90 days', () => {
   const old = repo({ stars: 500, week: 300 })
   const young = repo({ stars: 500, week: 100, createdAt: '2026-09-01T00:00:00Z' })
-  assert.deepEqual(rising([old, young], 'week', now).map((r) => r.id), [young.id])
+  assert.deepEqual(rising([old, young], now).map((r) => r.id), [young.id])
 })
 
 test('gems need 50–2000 stars, >= 20 weekly gain and some engagement', () => {
@@ -48,8 +56,7 @@ test('gems need 50–2000 stars, >= 20 weekly gain and some engagement', () => {
   const noEngagement = repo({ stars: 300, week: 60 })
   const tooBig = repo({ stars: 5000, week: 600, forksWeek: 3 })
   const better = repo({ stars: 100, week: 40, activity7: 2 })
-  assert.deepEqual(gems([ok, noEngagement, tooBig, better], 'week').map((r) => r.id), [better.id, ok.id])
-  assert.equal(top([ok, tooBig])[0].id, tooBig.id)
+  assert.deepEqual(gems([ok, noEngagement, tooBig, better]).map((r) => r.id), [better.id, ok.id])
 })
 
 test('radar rings hold 5/10/15/20 repos ordered by total stars', () => {
