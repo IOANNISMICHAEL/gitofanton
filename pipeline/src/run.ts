@@ -18,6 +18,7 @@ import { writeAll } from './write-json.ts'
 import { latestDownloads, readToolsCached, toolboxCounts } from './tools.ts'
 import { writeToolbox } from './toolbox.ts'
 import { writeRadars } from './radar.ts'
+import { writeSearch } from './search.ts'
 import { BURST_MIN_DAY_GAIN, STARGAZER_PAGES_FOR_BURST, coordinated, judge, loadBlocklist, makeBlocker, pickCandidates, youngIds } from './trust.ts'
 import { rank } from './score.ts'
 
@@ -258,6 +259,7 @@ async function main() {
     const [tools, downloads] = await Promise.all([readToolsCached(CACHE_DIR), latestDownloads()])
     writeToolbox(OUT_DIR, tools, downloads, new Map(scored.map((s) => [s.id, s])), now)
     writeRadars(OUT_DIR, scored, tools, downloads)
+    writeSearch(OUT_DIR, scored, tools, downloads)
   })
 
   // 9. Persist state (one KV write).

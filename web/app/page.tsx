@@ -19,6 +19,11 @@ const jsonLd = {
   name: "Git of Anton",
   url: `${SITE_URL}/`,
   description: "Trending GitHub repositories, agent skills, MCP servers and coding agents, ranked from GitHub star activity every 4 hours.",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/search/?q={search_term_string}` },
+    "query-input": "required name=search_term_string",
+  },
 };
 
 /** First N items of a repo list, or of a toolbox list in its default (Trending) order. */

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import { SearchDialog } from "@/components/search/search-dialog";
 
 const navLinks = [
   { name: "Trending", href: "/trending/" },
@@ -61,17 +62,20 @@ export function Navigation() {
                 <span className="absolute -bottom-1 left-0 w-0 h-px bg-foreground transition-all duration-300 group-hover:w-full" />
               </Link>
             ))}
+            <SearchDialog />
           </div>
 
-
+          <div className="flex items-center gap-1 md:hidden">
+          <SearchDialog compact />
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 text-foreground"
+            className="p-2 text-foreground"
             aria-label="Toggle menu"
             aria-expanded={isMobileMenuOpen}
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
+          </div>
         </div>
       </nav>
 
