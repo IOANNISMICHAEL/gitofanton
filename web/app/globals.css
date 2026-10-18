@@ -135,10 +135,8 @@
 }
 
 @layer utilities {
-  .font-display {
-    font-family: var(--font-display);
-  }
-  
+  /* .font-display comes from the theme's --font-display (an inline theme variable, so a
+     hand-written var(--font-display) rule here would resolve to nothing). */
   .text-stroke {
     -webkit-text-stroke: 1.5px currentColor;
     -webkit-text-fill-color: transparent;

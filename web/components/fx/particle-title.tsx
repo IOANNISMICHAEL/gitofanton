@@ -33,7 +33,9 @@ export function ParticleTitle({ text, className }: { text: string; className?: s
     let raf = 0;
     let visible = true;
 
+    /** Returns false while the box has no size yet (hidden tab, not laid out): the ResizeObserver retries. */
     const build = () => {
+      if (box.clientWidth < 10 || box.clientHeight < 10) return false;
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       w = box.clientWidth;
       h = box.clientHeight;
@@ -70,6 +72,7 @@ export function ParticleTitle({ text, className }: { text: string; className?: s
       }
       particles = next;
       stars = Array.from({ length: Math.round((w * h) / 9000) }, () => ({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.1 + 0.2, phase: Math.random() * Math.PI * 2 }));
+      return true;
     };
 
     const draw = (t: number) => {
@@ -111,13 +114,15 @@ export function ParticleTitle({ text, className }: { text: string; className?: s
     // Sample the glyphs only after the display font has loaded, or the particles take the fallback font's shape.
     const fontFamily = h1 ? getComputedStyle(h1).fontFamily : "serif";
     const fontsReady = document.fonts?.load ? document.fonts.load(`100px ${fontFamily}`, text).catch(() => undefined) : Promise.resolve();
-    void fontsReady.then(() => {
-      if (cancelled) return;
-      build();
+    let started = false;
+    const start = () => {
+      if (cancelled || started || !build()) return;
+      started = true;
       setReady(true);
       if (reduced) draw(0);
       else raf = requestAnimationFrame(step);
-    });
+    };
+    void fontsReady.then(start);
 
     const onMove = (e: PointerEvent) => {
       const r = cv.getBoundingClientRect();
@@ -128,10 +133,15 @@ export function ParticleTitle({ text, className }: { text: string; className?: s
       mouse.x = -9999;
       mouse.y = -9999;
     };
-    const onResize = () => {
-      build();
-      if (reduced) draw(0);
-    };
+    // Build on first real size, rebuild when the width changes (rotation, window resize).
+    let lastW = 0;
+    const ro = new ResizeObserver(() => {
+      if (!started) return void fontsReady.then(start);
+      if (Math.abs(box.clientWidth - lastW) < 4) return;
+      lastW = box.clientWidth;
+      if (build() && reduced) draw(0);
+    });
+    ro.observe(box);
     // Pause the animation while the hero is off screen.
     const io = new IntersectionObserver(([e]) => {
       const was = visible;
@@ -141,14 +151,13 @@ export function ParticleTitle({ text, className }: { text: string; className?: s
     io.observe(box);
     box.addEventListener("pointermove", onMove);
     box.addEventListener("pointerleave", onLeave);
-    window.addEventListener("resize", onResize);
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
       io.disconnect();
+      ro.disconnect();
       box.removeEventListener("pointermove", onMove);
       box.removeEventListener("pointerleave", onLeave);
-      window.removeEventListener("resize", onResize);
     };
   }, [text]);
 
