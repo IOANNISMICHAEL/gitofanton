@@ -59,7 +59,8 @@ export function ParticleTitle({ text, className }: { text: string; className?: s
       }
       o.fillStyle = "#fff";
       o.textBaseline = "middle";
-      o.fillText(text, 0, h * 0.52);
+      o.textAlign = "center";
+      o.fillText(text, w / 2, h * 0.52);
       const data = o.getImageData(0, 0, w, h).data;
       const gap = w < 640 ? 3 : 4;
       const next: P[] = [];
@@ -165,7 +166,7 @@ export function ParticleTitle({ text, className }: { text: string; className?: s
     <div ref={wrap} className={className} style={{ position: "relative" }}>
       {/* Particles are white, so they only replace the heading in the dark theme. */}
       <h1
-        className={`font-display text-[clamp(3rem,9vw,8.5rem)] leading-none tracking-tight text-foreground text-glow transition-opacity duration-500 ${ready ? "dark:opacity-0" : ""}`}
+        className={`w-full text-center font-display text-[clamp(3rem,9vw,8.5rem)] leading-none tracking-tight text-foreground text-glow transition-opacity duration-500 ${ready ? "dark:opacity-0" : ""}`}
       >
         {text}
       </h1>

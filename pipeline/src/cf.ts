@@ -61,7 +61,7 @@ export async function d1<T = Record<string, unknown>>(sql: string, params: unkno
   })
   const body = (await res.json()) as { success: boolean; errors?: unknown; result?: D1Result<T>[] }
   if (!res.ok || !body.success || !body.result?.[0]) {
-    throw new Error(`D1 query failed (${res.status}): ${JSON.stringify(body.errors)} — ${sql.slice(0, 120)}`)
+    throw new Error(`D1 query failed (${res.status}): ${JSON.stringify(body.errors)}: ${sql.slice(0, 120)}`)
   }
   const r = body.result[0]
   writtenThisRun += r.meta?.rows_written ?? 0

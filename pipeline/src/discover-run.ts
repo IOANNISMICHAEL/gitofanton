@@ -32,7 +32,7 @@ function toToolRow(s: RegistryServer, categorise: ReturnType<typeof makeCategori
   const sv = s.server
   const meta = officialMeta(s)
   const pkg = sv.packages?.find((p) => p.registryType === 'npm' || p.registryType === 'pypi') ?? sv.packages?.[0]
-  const text = stripFormatWords([sv.title, sv.description, sv.name.split('/').pop()].filter(Boolean).join(' — '))
+  const text = stripFormatWords([sv.title, sv.description, sv.name.split('/').pop()].filter(Boolean).join('. '))
   const row: ToolRow = {
     type: 'mcp',
     slug: `mcp/${sv.name.toLowerCase()}`,
@@ -102,7 +102,7 @@ const CACHE_DIR = process.env.PIPELINE_CACHE_DIR ?? '.cache/pipeline'
 
 /** Text the classifier reads for a toolbox item: what it does, without format words. */
 export const toolText = (t: { name: string; title?: string | null; description?: string | null }) =>
-  stripFormatWords([t.title, t.description, t.name.split('/').pop()].filter(Boolean).join(' — '))
+  stripFormatWords([t.title, t.description, t.name.split('/').pop()].filter(Boolean).join('. '))
 
 /** Classifier first; keeps the keyword-rule category when the classifier is unsure. Stamps the version either way. */
 async function refine<T extends ToolRow & { hash: string }>(rows: T[], texts: string[]): Promise<T[]> {
@@ -234,7 +234,7 @@ async function reclassify(categorise: Categorise) {
   const repos = await reposToClassify(CLASSIFIER_VERSION)
   const unplaced = repos.filter((r) => categorise({ topics: JSON.parse(r.topics ?? '[]'), description: r.description, language: r.language }) === 'other')
   const batch = unplaced.slice(0, Math.max(0, writeBudgetLeft() - 2000))
-  const repoCats = await classifier(batch.map((r) => `${r.full_name.split('/')[1].replace(/[-_]/g, ' ')} — ${r.description ?? ''} ${JSON.parse(r.topics ?? '[]').join(' ')}`))
+  const repoCats = await classifier(batch.map((r) => `${r.full_name.split('/')[1].replace(/[-_]/g, ' ')}. ${r.description ?? ''} ${JSON.parse(r.topics ?? '[]').join(' ')}`))
   await setRepoCategories(batch.map((r, i) => [r.id, repoCats[i] ?? 'other']), CLASSIFIER_VERSION)
   log('reclassify', { tools: tools.length, toolsPlaced: cats.filter(Boolean).length, reposUnplaced: unplaced.length, reposDone: batch.length, reposPlaced: repoCats.filter(Boolean).length })
 }

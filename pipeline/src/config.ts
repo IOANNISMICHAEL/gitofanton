@@ -1,4 +1,4 @@
-// Tunable constants. score.ts constants are published on /methodology — keep them in sync.
+// Tunable constants. score.ts constants are published on /methodology; keep them in sync.
 
 export const MIN_STARS_LISTED = 50 // a repo appears in any list only with >= this many total stars
 export const DAILY_MIN_STARS = 3 // daily_stats rows are written only for repos gaining >= this many stars that day

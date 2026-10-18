@@ -49,14 +49,11 @@ export default function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="mx-auto w-full max-w-[1200px] px-4 pb-20 pt-28 sm:px-6 lg:px-8">
         {/* Hero */}
-        <header className="hero-rays mb-10">
-          <ParticleTitle text="Git of Anton" className="h-[clamp(120px,20vw,260px)] w-full flex items-center" />
-          <p className="mt-4 max-w-2xl text-xl leading-relaxed text-muted-foreground">
-            What&apos;s taking off on GitHub right now — repositories, agent skills, MCP servers and coding agents — by real star growth,
-            refreshed every 4 hours.
-          </p>
+        <header className="hero-rays mb-10 text-center">
+          <ParticleTitle text="Git of Anton" className="flex h-[clamp(120px,20vw,260px)] w-full items-center justify-center" />
+          <p className="mx-auto mt-4 max-w-2xl text-xl leading-relaxed text-muted-foreground">What&apos;s taking off on GitHub right now.</p>
           {meta?.trendingTopics?.length ? (
-            <div className="mt-5 flex flex-wrap items-center gap-2">
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
               <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">Trending topics</span>
               {meta.trendingTopics.map((t) => (
                 <a

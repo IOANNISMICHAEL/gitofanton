@@ -143,7 +143,7 @@ export async function reposToClassify(version: number) {
   return r.results
 }
 
-/** rows: [repoId, category] — stamps category_v; only repos the rules can't place are written. */
+/** rows: [repoId, category]. Stamps category_v; only repos the rules can't place are written. */
 export async function setRepoCategories(rows: [number, string][], version: number) {
   await d1BulkWrite(
     `UPDATE repos SET category = (SELECT value->>1 FROM json_each(?1) WHERE value->>0 = repos.id), category_v = ?2

@@ -1,4 +1,4 @@
-// Category rules (PLAN 6.5): ordered rules, first match wins — topics, then description keywords, then language.
+// Category rules (PLAN 6.5): ordered rules, first match wins: topics, then description keywords, then language.
 import { readFileSync } from 'node:fs'
 import { CATEGORIES, type Category } from './config.ts'
 

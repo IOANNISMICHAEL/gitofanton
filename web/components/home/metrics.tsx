@@ -17,7 +17,7 @@ export function Metrics({ meta }: { meta: Meta | null }) {
       <dl className="grid grid-cols-2 sm:grid-cols-5">
         {items.map((m, i) => (
           <div key={m.label} className={`px-5 py-5 ${i > 0 ? "sm:border-l sm:border-border" : ""} ${i > 1 ? "border-t border-border sm:border-t-0" : ""}`}>
-            <dd className="font-display text-4xl text-foreground text-glow sm:text-5xl">{m.value ? <CountUp value={m.value} /> : "—"}</dd>
+            <dd className="font-display text-4xl text-foreground text-glow sm:text-5xl">{m.value ? <CountUp value={m.value} /> : "0"}</dd>
             <dt className="mt-2 font-mono text-[0.7rem] uppercase tracking-[0.15em] text-muted-foreground">{m.label}</dt>
           </div>
         ))}

@@ -130,7 +130,7 @@ export async function toolsToClassify(version: number, limit: number) {
   return r.results
 }
 
-/** rows: [toolId, category] — always stamps category_v so each row is classified once per version. */
+/** rows: [toolId, category]. Always stamps category_v so each row is classified once per version. */
 export async function setToolCategories(rows: [number, string][], version: number) {
   await d1BulkWrite(
     `UPDATE tools SET category = (SELECT value->>1 FROM json_each(?1) WHERE value->>0 = tools.id), category_v = ?2,
