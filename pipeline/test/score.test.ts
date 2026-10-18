@@ -1,7 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { gems, isEligible, rank, rising, score, trending, type Scored } from '../src/score.ts'
-import { buildRadar, compactStars, slug } from '../src/write-json.ts'
+import { slug } from '../src/write-json.ts'
+import { compactStars } from '../src/radar.ts'
 import { makeCategoriser, loadRules } from '../src/categorise.ts'
 
 const now = new Date('2026-10-17T12:00:00Z')
@@ -48,15 +49,6 @@ test('gems need 50–2000 stars, >= 20 weekly gain and some engagement', () => {
   const tooBig = repo({ stars: 5000, week: 600, forksWeek: 3 })
   const better = repo({ stars: 100, week: 40, activity7: 2 })
   assert.deepEqual(gems([ok, noEngagement, tooBig, better]).map((r) => r.id), [better.id, ok.id])
-})
-
-test('radar rings hold 5/10/15/20 repos ordered by total stars', () => {
-  const list = Array.from({ length: 60 }, (_, i) => repo({ stars: 1000 + i * 100, week: 10 }))
-  const radar = buildRadar(list)
-  assert.equal(radar.items.length, 50)
-  const sizes = [0, 1, 2, 3].map((r) => radar.items.filter((i) => i.ring === r).length)
-  assert.deepEqual(sizes, [5, 10, 15, 20])
-  assert.ok(radar.items.filter((i) => i.ring === 0).every((i) => i.s >= radar.rings[1].max))
 })
 
 test('helpers', () => {

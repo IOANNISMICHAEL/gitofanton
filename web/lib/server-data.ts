@@ -1,7 +1,7 @@
 // Build-time access to the pipeline's JSON (web/public/data). Server components only.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { toolCategoryDataPath, toolDataPath, viewDataPath, type ListId, type Meta, type ToolSortId, type View, type WindowId } from "@/lib/data";
+import { toolCategoryDataPath, toolDataPath, viewDataPath, type ListId, type Meta, type Radar, type ToolSortId, type View, type WindowId } from "@/lib/data";
 
 const DATA_DIR = join(process.cwd(), "public", "data");
 
@@ -22,6 +22,8 @@ export function readToolView(list: ListId, sort: ToolSortId = "trending", catego
   const rel = (category === "all" ? toolDataPath(list, sort) : toolCategoryDataPath(list, category)).replace(/^\/data\//, "");
   return readJson<View>(rel) ?? { list, window: null, category, lang: null, total: 0, items: [] };
 }
+
+export const readRadar = (category: string) => readJson<Radar>(`radar/${category}.json`);
 
 export const readMeta = () => readJson<Meta>("meta.json");
 export const readToolboxMeta = () => readJson<{ counts: Record<string, number>; byCategory: Record<string, number> }>("toolbox/meta.json");

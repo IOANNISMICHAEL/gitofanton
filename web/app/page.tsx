@@ -8,7 +8,8 @@ import { Metrics } from "@/components/home/metrics";
 import { ParticleTitle } from "@/components/fx/particle-title";
 import { NeonCard } from "@/components/fx/neon-card";
 import { SITE_URL, isToolList, type Item, type ListId, type WindowId } from "@/lib/data";
-import { readMeta, readToolView, readToolboxMeta, readView } from "@/lib/server-data";
+import { readMeta, readRadar, readToolView, readToolboxMeta, readView } from "@/lib/server-data";
+import { RadarSection } from "@/components/radar/radar-section";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
@@ -82,6 +83,11 @@ export default function Home() {
           <CompactList title="Trending this week" subtitle="Fastest growing over 7 days, adjusted for size." href="/trending/week/" items={week.items} gainLabel="this week" />
           <CompactList title="New & rising" subtitle="Created in the last 90 days, by stars this week." href="/rising/" items={rising.items} gainLabel="this week" />
           <CompactList title="Hidden gems" subtitle="Small projects (50–2,000 stars) growing fast." href="/gems/" items={gems.items} gainLabel="this week" />
+        </div>
+
+        {/* AI radar */}
+        <div className="mt-14">
+          <RadarSection radar={readRadar("ai")} category="ai" title="AI & agents radar" />
         </div>
 
         {/* Categories */}

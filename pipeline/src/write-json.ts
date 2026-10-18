@@ -3,7 +3,7 @@
 // downloads a view's file to sort and paginate its top 500 without further requests.
 import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { CATEGORIES, FORMULA_VERSION, OUT_FILE_LIMIT, QUADRANTS, RADAR_RINGS, RADAR_SIZE, VIEW_SIZE } from './config.ts'
+import { CATEGORIES, FORMULA_VERSION, OUT_FILE_LIMIT, VIEW_SIZE } from './config.ts'
 import { LISTS, LIST_WINDOWS, gainWindow, isEligible, isNew, rank, trending, type ListName, type Scored, type Window } from './score.ts'
 import { log } from './util.ts'
 
@@ -49,33 +49,6 @@ const toItem = (r: Scored, w: Window, now: Date): Item => ({
 
 /** Language URL slug; must match web/lib/data.ts. */
 export const slug = (s: string) => s.toLowerCase().replace(/\+/g, 'p').replace(/#/g, 'sharp').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-
-export function compactStars(n: number) {
-  if (n >= 1_000_000) return `${+(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1000) return `${Math.round(n / 1000)}k`
-  return String(n)
-}
-
-export type RadarItem = { n: string; s: number; g: number; c: string; q: number; ring: number; a: string | null }
-
-/** Top RADAR_SIZE by 7-day momentum, positioned by total-stars rank within that set (PLAN v2 §1). */
-export function buildRadar(byWeek: Scored[]) {
-  const set = byWeek.slice(0, RADAR_SIZE).sort((a, b) => b.stars - a.stars)
-  const rings: { label: string; min: number; max: number }[] = []
-  const items: RadarItem[] = []
-  let start = 0
-  RADAR_RINGS.forEach((size, ring) => {
-    const members = set.slice(start, start + size)
-    start += size
-    if (!members.length) return
-    const max = members[0].stars
-    const min = members[members.length - 1].stars
-    rings.push({ label: min === max ? compactStars(max) : `${compactStars(min)}–${compactStars(max)}`, min, max })
-    // Quadrant = item type; every item is a repo until the Toolbox lands (M5–M7).
-    for (const r of members) items.push({ n: r.fullName, s: r.stars, g: r.gain.week, c: r.category, q: 0, ring, a: r.avatarUrl })
-  })
-  return { quadrants: QUADRANTS, rings, items }
-}
 
 const LANGUAGES = (
   JSON.parse(readFileSync(new URL('../../config/languages.json', import.meta.url), 'utf8')) as { languages: string[] }
@@ -125,8 +98,6 @@ export function writeAll(outDir: string, repos: Scored[], now: Date, meta: Recor
   write('flagged.json', { total: flagged.length, items: flagged.slice(0, VIEW_SIZE).map((r) => toItem(r, 'week', now)) })
   counts.flagged = flagged.length
 
-  const radar = buildRadar(trending(repos, 'week'))
-  write('radar.json', { generatedAt, ...radar })
   // Front page: total stars gained today, and the topics most common among this week's trending repos.
   const eligible = repos.filter((r) => isEligible(r))
   const starsToday = eligible.reduce((n, r) => n + r.gain.today, 0)
@@ -143,7 +114,6 @@ export function writeAll(outDir: string, repos: Scored[], now: Date, meta: Recor
     languages: LANGUAGES.map((name) => ({ name, slug: slug(name) })),
     ...meta,
   })
-  log('radar', { items: radar.items.map((i) => `${i.n} [${i.c}] ring${i.ring}`) })
   log('categories', categoryCounts)
   return { files, generatedAt }
 }

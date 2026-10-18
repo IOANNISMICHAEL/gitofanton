@@ -180,6 +180,11 @@ export function viewDataPath(list: ListId, window: WindowId | null, category = "
   return lang ? `/data/lists/${list}/${window}/lang/${lang}.json` : `/data/lists/${list}/${window}/${category}.json`;
 }
 
+/** data/radar/{category}.json (pipeline/src/radar.ts). q = quadrant index; ring 0 = most stars. */
+export type RadarItem = { n: string; ty: ItemType; q: number; c: string; s: number; g: number; u: string; a: string | null; ring: number };
+export type Radar = { category: string; quadrants: string[]; rings: { label: string; min: number; max: number }[]; items: RadarItem[] };
+export const RADAR_CATEGORIES = () => CATEGORIES.filter((c) => c.id !== "other");
+
 export const TYPE_LABEL: Record<ItemType, string> = { repo: "Repo", skill: "Skill", mcp: "MCP server", agent: "Agent", plugin: "Plugin" };
 
 export function formatStars(n: number) {

@@ -55,7 +55,7 @@ export function isListed(t: ToolRead, repo: Scored | undefined, downloads: numbe
   return (repo?.stars ?? 0) >= BULK_MIN_STARS || (downloads ?? 0) >= BULK_MIN_DOWNLOADS
 }
 
-function link(t: ToolRead, repo: string | null) {
+export function link(t: ToolRead, repo: string | null) {
   if ((t.type === 'skill' || t.type === 'plugin') && repo && t.path) {
     const dir = t.path.replace(/\/?(SKILL\.md|\.claude-plugin\/plugin\.json)$/i, '')
     return `https://github.com/${repo}${dir ? `/tree/HEAD/${dir}` : ''}`

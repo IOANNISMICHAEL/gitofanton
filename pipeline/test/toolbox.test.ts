@@ -80,3 +80,26 @@ test('decide: confident best match or null', () => {
   assert.equal(decide([0.9, 0.1], protos), 'data')
   assert.equal(decide([0.2, 0.19], protos), null) // too close / too weak
 })
+
+test('radar: one entry per repo, shown as its most specific tool type', async () => {
+  const { radarEntries } = await import('../src/radar.ts')
+  const plain = { ...repo(101, 5000, 40), category: 'ai' as const }
+  const host = { ...repo(102, 9000, 80), category: 'ai' as const }
+  const idle = { ...repo(103, 9000, 0), category: 'ai' as const }
+  const tools = [
+    tool({ type: 'skill', repo_id: 102, category: 'gamedev' }),
+    tool({ type: 'agent', repo_id: 102, title: 'Helper', category: 'gamedev' }),
+  ]
+  const e = radarEntries([plain, host, idle], tools, new Map())
+  assert.deepEqual(e.map((x) => [x.n, x.ty, x.q, x.c]), [['o/r101', 'repo', 0, 'ai'], ['Helper', 'agent', 3, 'gamedev']])
+})
+
+test('radar: 50 items, at most 20 per quadrant, rings 5/10/15/20 by stars', async () => {
+  const { buildRadar } = await import('../src/radar.ts')
+  const mk = (i: number, q: number) => ({ n: `x${i}`, ty: 'repo' as const, q, c: 'ai', s: 1000 + i * 100, g: 10 + i, u: '', a: null })
+  const r = buildRadar([...Array.from({ length: 40 }, (_, i) => mk(i, 0)), ...Array.from({ length: 40 }, (_, i) => mk(100 + i, 2))])
+  assert.equal(r.items.length, 40) // 20 repos + 20 MCP: the cap leaves the rest out
+  const big = buildRadar([0, 1, 2, 3].flatMap((q) => Array.from({ length: 20 }, (_, i) => mk(q * 100 + i, q))))
+  assert.deepEqual([0, 1, 2, 3].map((ring) => big.items.filter((i) => i.ring === ring).length), [5, 10, 15, 20])
+  assert.ok(big.items.filter((i) => i.ring === 0).every((i) => i.s >= big.rings[1].max))
+})

@@ -4,7 +4,8 @@ import { SiteShell } from "@/components/site-shell";
 import { CompactList } from "@/components/home/compact-list";
 import categoriesConfig from "../../../../config/categories.json";
 import { CATEGORIES, SITE_URL, categoryLabel, isToolList, viewHref, type ListId, type WindowId } from "@/lib/data";
-import { readToolView, readView } from "@/lib/server-data";
+import { readRadar, readToolView, readView } from "@/lib/server-data";
+import { RadarSection } from "@/components/radar/radar-section";
 
 type Params = Promise<{ id: string }>;
 export const dynamicParams = false;
@@ -63,7 +64,12 @@ export default async function CategoryPage({ params }: { params: Params }) {
         </nav>
         <h1 className="font-display text-5xl tracking-tight text-foreground text-glow sm:text-7xl">{label}</h1>
         <p className="mt-3 max-w-2xl text-muted-foreground">{about(id)}</p>
-        <div className="mt-8 grid gap-4 lg:grid-cols-2">
+        {id !== "other" ? (
+          <div className="mt-8">
+            <RadarSection radar={readRadar(id)} category={id} title={`${label} radar`} />
+          </div>
+        ) : null}
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <CompactList title="Trending this week" href={trending.href} items={trending.items} gainLabel="this week" showCategory={false} />
           <CompactList title="New & rising" href={rising.href} items={rising.items} gainLabel="this week" showCategory={false} />
         </div>

@@ -8,6 +8,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = readMeta()?.generatedAt ?? new Date().toISOString();
   const urls = new Set<string>(["/", "/toolbox/", "/categories/"]);
   for (const c of CATEGORIES) urls.add(`/category/${c.id}/`);
+  urls.add("/radar/");
+  for (const c of CATEGORIES) if (c.id !== "other" && c.id !== "ai") urls.add(`/radar/${c.id}/`);
   for (const list of Object.keys(LISTS) as ListId[]) {
     if (isToolList(list)) {
       for (const s of toolSortsFor(list)) urls.add(toolHref(list, s.id));

@@ -7,6 +7,7 @@ const footerLinks = {
     { name: "Hidden gems", href: "/gems/" },
   ],
   Explore: [
+    { name: "Radar", href: "/radar/" },
     { name: "Agent toolbox", href: "/toolbox/" },
   ],
   Site: [
