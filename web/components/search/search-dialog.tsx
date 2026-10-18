@@ -14,6 +14,7 @@ export function SearchDialog({ compact = false, shortcuts = !compact }: { compac
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<SearchRow[]>([]);
+  const [doneFor, setDoneFor] = useState(""); // the query the current rows answer
   const [active, setActive] = useState(0);
   const seq = useRef(0);
 
@@ -40,6 +41,7 @@ export function SearchDialog({ compact = false, shortcuts = !compact }: { compac
       void search(q).then((r) => {
         if (n !== seq.current) return; // a newer query won
         setRows(r);
+        setDoneFor(q);
         setActive(0);
       });
     }, 80);
@@ -100,7 +102,7 @@ export function SearchDialog({ compact = false, shortcuts = !compact }: { compac
             {q.trim().length < 2 ? (
               <p className="px-4 py-6 text-sm text-muted-foreground">Type at least two letters. Matches the start of any word in a name.</p>
             ) : rows.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-muted-foreground">No matches in the top 50,000 names.</p>
+              <p className="px-4 py-6 text-sm text-muted-foreground">{doneFor === q ? "No matches in the top 50,000 names." : "Searching…"}</p>
             ) : (
               <SearchResults rows={rows} active={active} onHover={setActive} />
             )}

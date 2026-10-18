@@ -14,6 +14,7 @@ export function SearchPageClient() {
     let live = true;
     const t = setTimeout(() => {
       void search(q, 50).then((r) => live && setRows(r));
+      if (live) setRows(null); // "Searching…" until this query's rows arrive
       history.replaceState(history.state, "", q.trim() ? `?q=${encodeURIComponent(q.trim())}` : location.pathname);
     }, 120);
     return () => {
@@ -39,7 +40,9 @@ export function SearchPageClient() {
         <div className="neon">
           <SearchResults rows={rows} active={-1} />
         </div>
-      ) : null}
+      ) : (
+        <p className="text-muted-foreground">Searching…</p>
+      )}
     </>
   );
 }
