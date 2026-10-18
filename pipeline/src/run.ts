@@ -15,7 +15,7 @@ import { planSnapshots } from './snapshot.ts'
 import { loadState, loadWindows, saveState, saveWindows, type State, type Tracked, type Windows } from './state.ts'
 import { DAY_MS, addDays, chunk, log, mapLimit, step, stepTimings, utcDay } from './util.ts'
 import { writeAll } from './write-json.ts'
-import { latestDownloads, readToolsCached, toolboxCounts } from './tools.ts'
+import { countTools, latestDownloads, readToolsCached } from './tools.ts'
 import { writeToolbox } from './toolbox.ts'
 import { writeRadars } from './radar.ts'
 import { dirname } from 'node:path'
@@ -254,7 +254,7 @@ async function main() {
   const paths: ItemPaths = { repo: (id) => pages.repoPath.get(id), tool: (id) => pages.toolPath.get(id) }
   const out = await step('write-json', async () => writeAll(OUT_DIR, scored, now, {
     trackedRepos: Object.keys(state.repos).length,
-    toolbox: await toolboxCounts(),
+    toolbox: countTools(tools, downloads),
     historyDays: win.historyDays,
     historyAsOf: win.asOf,
   }, paths))
@@ -272,6 +272,8 @@ async function main() {
   await step('save-state', () => saveState(state))
 
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `generated_at=${out.generatedAt}\n`)
+  const u = d1Usage()
+  console.log(`::notice::D1: ${u.readThisRun.toLocaleString('en-US')} rows read, ${u.writtenThisRun.toLocaleString('en-US')} written this run`)
   log('done', {
     generatedAt: out.generatedAt,
     dataFiles: out.files,

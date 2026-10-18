@@ -39,6 +39,12 @@ export function initWriteBudget(alreadyWrittenToday: number, dailyGuard = D1_DAI
 /** Rows that can still be written today under this job's guard. */
 export const writeBudgetLeft = () => guard - writtenTodayBefore - writtenThisRun
 
+/** Rows this run may read before it stops cleanly (Infinity = no cap). D1 free tier: 5M reads/day for all jobs. */
+let readCap = Infinity
+export const setReadCap = (rows: number) => {
+  readCap = rows
+}
+
 export const d1Usage = () => ({ writtenThisRun, readThisRun, writtenToday: writtenTodayBefore + writtenThisRun })
 
 /** Today's write budget is used up: not a failure, the work resumes on the next day's run. */
@@ -66,6 +72,7 @@ export async function d1<T = Record<string, unknown>>(sql: string, params: unkno
   const r = body.result[0]
   writtenThisRun += r.meta?.rows_written ?? 0
   readThisRun += r.meta?.rows_read ?? 0
+  if (readThisRun > readCap) throw new WriteBudgetError(`D1 read cap: ${readThisRun} rows read this run (cap ${readCap})`)
   return r
 }
 

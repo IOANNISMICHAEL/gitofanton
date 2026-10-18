@@ -85,6 +85,24 @@ export async function windowSums(from30: string, from7: string, lastDay: string)
 const REPO_COLUMNS = `id, node_id, stars, forks, full_name, description, language, topics, license, homepage, avatar_url, created_at, pushed_at,
   is_fork, is_archived, category, category_v, flag_reason, enriched_at`
 
+/** Rows enriched after `since`, read in index order (repos_enriched_at) so only those rows are read. */
+async function readChangedSince(since: string): Promise<RepoRow[]> {
+  const out: RepoRow[] = []
+  let at = since
+  let after = -1
+  for (;;) {
+    const r = await d1<RepoRow>(
+      `SELECT ${REPO_COLUMNS} FROM repos WHERE enriched_at > ?1 OR (enriched_at = ?1 AND id > ?2) ORDER BY enriched_at, id LIMIT 5000`,
+      [at, after],
+    )
+    out.push(...r.results)
+    if (r.results.length < 5000) return out
+    const last = r.results[r.results.length - 1]
+    at = last.enriched_at ?? at
+    after = last.id
+  }
+}
+
 async function readPaged(where: string, params: unknown[]): Promise<RepoRow[]> {
   const out: RepoRow[] = []
   let after = -1
@@ -118,7 +136,7 @@ export async function readReposCached(dir: string): Promise<{ rows: RepoRow[]; c
   let rows: RepoRow[]
   let changed: RepoRow[]
   if (cache) {
-    changed = await readPaged('AND enriched_at > ?2', [cache.asOf])
+    changed = await readChangedSince(cache.asOf)
     const byId = new Map(cache.rows.map((r) => [r.id, r]))
     for (const r of changed) byId.set(r.id, r)
     rows = [...byId.values()]

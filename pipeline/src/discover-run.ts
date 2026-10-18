@@ -3,8 +3,8 @@
 //   1. MCP servers from the official MCP Registry (first import resumable across days, then incremental)
 //   2. Resolve each tool's GitHub repo; repos with >= TOOL_REPO_MIN_STARS join star tracking
 //   3. Weekly npm / PyPI downloads, one seventh of the packages per day
-import { d1Usage, initWriteBudget, kvGet, kvPut, writeBudgetLeft, WriteBudgetError } from './cf.ts'
-import { D1_DISCOVER_WRITE_GUARD, DISCOVER_RESERVE_WRITES, TREE_SCANS_PER_RUN, GITHUB_CONCURRENCY, TOOL_REPO_LOOKUPS_PER_DAY, TOOL_REPO_MIN_STARS, TOOL_REPO_RECHECK_DAYS } from './config.ts'
+import { d1Usage, initWriteBudget, kvGet, kvPut, setReadCap, writeBudgetLeft, WriteBudgetError } from './cf.ts'
+import { D1_DISCOVER_WRITE_GUARD, DISCOVER_READ_CAP, DISCOVER_RESERVE_WRITES, TREE_SCANS_PER_RUN, GITHUB_CONCURRENCY, TOOL_REPO_LOOKUPS_PER_DAY, TOOL_REPO_MIN_STARS, TOOL_REPO_RECHECK_DAYS } from './config.ts'
 import { loadRules, makeCategoriser, stripFormatWords } from './categorise.ts'
 import { fetchWeeklyDownloads, weekOf } from './downloads.ts'
 import { fetchMetaByNames, graphqlStats, restStats } from './github.ts'
@@ -14,7 +14,7 @@ import { findAgents } from './agents.ts'
 import type { RepoMeta } from './github.ts'
 import { reposToClassify, setRepoCategories, upsertRepos } from './repos.ts'
 import { CLASSIFIER_VERSION, loadClassifier, type Classifier } from './classify.ts'
-import { contentHash, markRemoved, packagesForSlice, setToolCategories, setToolRepos, toolboxCounts, toolsNeedingRepo, toolsToClassify, upsertTools, writeDownloads, type ToolRow } from './tools.ts'
+import { contentHash, markRemoved, packagesForSlice, setToolCategories, setToolRepos, toolsNeedingRepo, toolsToClassify, upsertTools, writeDownloads, type ToolRow } from './tools.ts'
 import { DAY_MS, chunk, gunzipJson, gzipJson, log, mapLimit, step, stepTimings, utcDay } from './util.ts'
 
 type DiscoverState = {
@@ -261,6 +261,7 @@ async function main() {
   const state = buf ? gunzipJson<DiscoverState>(buf) : fresh(today)
   if (state.d1.day !== today) state.d1 = { day: today, written: 0 }
   initWriteBudget(state.d1.written, D1_DISCOVER_WRITE_GUARD)
+  setReadCap(DISCOVER_READ_CAP)
   log('discover state', { mcp: state.mcp, d1WrittenToday: state.d1.written })
 
   classifier = await step('classifier', () => loadClassifier(`${CACHE_DIR}/hf`))
@@ -279,7 +280,7 @@ async function main() {
         await step(name, fn)
       } catch (e) {
         if (!(e instanceof WriteBudgetError)) throw e
-        console.log(`::notice::${name}: today's database write budget is used up; the remaining steps continue on the next run`)
+        console.log(`::notice::${name}: ${e.message}; the remaining steps continue on the next run`)
         break
       }
     }
@@ -288,7 +289,9 @@ async function main() {
     state.d1 = { day: today, written: d1Usage().writtenToday }
     await kvPut(KEY, gzipJson(state))
   }
-  log('done', { toolbox: await toolboxCounts(), d1: d1Usage(), graphql: graphqlStats, rest: restStats, seconds: Math.round((Date.now() - started) / 1000), steps: stepTimings() })
+  const u = d1Usage()
+  console.log(`::notice::D1: ${u.readThisRun.toLocaleString('en-US')} rows read, ${u.writtenThisRun.toLocaleString('en-US')} written this run`)
+  log('done', { d1: u, graphql: graphqlStats, rest: restStats, seconds: Math.round((Date.now() - started) / 1000), steps: stepTimings() })
 }
 
 main().catch((e) => {

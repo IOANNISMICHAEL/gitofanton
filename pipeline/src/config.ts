@@ -39,6 +39,9 @@ export const D1_DAILY_WRITE_GUARD = 55_000 // data.yml
 export const D1_DISCOVER_WRITE_GUARD = 35_000 // discover.yml (first MCP import spreads over ~3–4 days)
 // Part of discover's daily share kept for repo linking and downloads while the first import is still running.
 export const DISCOVER_RESERVE_WRITES = 10_000
+// D1 free tier: 5M rows read per day across all jobs. Discover runs twice a day; data runs ~6 times
+// and reads only changed rows (indexes in migrations/0004).
+export const DISCOVER_READ_CAP = 1_000_000
 export const TOOL_REPO_MIN_STARS = 10 // a tool's GitHub repo joins star tracking at or above this
 export const TOOL_REPO_LOOKUPS_PER_DAY = 3000
 // Repo file-list checks per discover run. GITHUB_TOKEN allows 1,000 REST calls/hour; a GH_PAT 5,000.

@@ -110,6 +110,19 @@ export async function writeDownloads(rows: [number, string, number][]) {
   )
 }
 
+/** The same counts from rows already in memory (the data job): no extra D1 reads. */
+export function countTools(tools: ToolRead[], downloads: Map<number, number>) {
+  const byType: Record<string, { total: number; withRepo: number; withPackage: number }> = {}
+  for (const t of tools) {
+    if (t.status !== 'active') continue
+    const b = (byType[t.type] ??= { total: 0, withRepo: 0, withPackage: 0 })
+    b.total++
+    if (t.repo_id != null) b.withRepo++
+    if (t.package != null) b.withPackage++
+  }
+  return { byType, withDownloads: downloads.size }
+}
+
 export async function toolboxCounts() {
   const r = await d1<{ type: string; n: number; with_repo: number; with_package: number }>(
     `SELECT type, COUNT(*) AS n, SUM(repo_id IS NOT NULL) AS with_repo, SUM(package IS NOT NULL) AS with_package
@@ -165,6 +178,27 @@ export type ToolRead = {
   changed_at: string | null
 }
 
+const TOOL_COLUMNS = `id, type, slug, name, title, description, repo_url, repo_id, path, package, package_registry, remote,
+  website, status, category, first_seen, changed_at`
+
+/** Rows changed after `since`, read in index order (tools_changed_at) so only those rows are read. */
+async function readToolsChangedSince(since: string): Promise<ToolRead[]> {
+  const out: ToolRead[] = []
+  let at = since
+  let after = -1
+  for (;;) {
+    const r = await d1<ToolRead>(
+      `SELECT ${TOOL_COLUMNS} FROM tools WHERE changed_at > ?1 OR (changed_at = ?1 AND id > ?2) ORDER BY changed_at, id LIMIT 5000`,
+      [at, after],
+    )
+    out.push(...r.results)
+    if (r.results.length < 5000) return out
+    const last = r.results[r.results.length - 1]
+    at = last.changed_at ?? at
+    after = last.id
+  }
+}
+
 async function readToolsPaged(where: string, params: unknown[]): Promise<ToolRead[]> {
   const out: ToolRead[] = []
   let after = -1
@@ -194,7 +228,7 @@ export async function readToolsCached(dir: string): Promise<ToolRead[]> {
   }
   let rows: ToolRead[]
   if (cache) {
-    const changed = await readToolsPaged('AND changed_at > ?2', [cache.asOf])
+    const changed = await readToolsChangedSince(cache.asOf)
     const byId = new Map(cache.rows.map((r) => [r.id, r]))
     for (const r of changed) byId.set(r.id, r)
     rows = [...byId.values()]

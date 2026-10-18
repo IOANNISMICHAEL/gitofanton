@@ -63,9 +63,9 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm --dir web install --frozen-lockfile
 
-      # Schema only changes with code, so scheduled runs skip this.
+      # A handful of reads; on a code push it may not stop the deploy (the data comes from the cache).
       - name: Apply D1 migrations
-        if: github.event_name != 'schedule'
+        continue-on-error: ${{ github.event_name == 'push' }}
         run: pnpm exec wrangler d1 migrations apply git-of-anton --remote
 
       - name: Restore pipeline cache
@@ -75,14 +75,36 @@ jobs:
           key: pipeline-${{ github.run_id }}
           restore-keys: pipeline-
 
+      # A code push redeploys the last good data instead of re-running the pipeline: every run reads
+      # D1, and D1's free tier allows 5M row reads a day (2026-10-18: 15 pushes used it up).
+      # Pipeline code changes take effect at the next scheduled run.
+      - name: Reuse last good data
+        id: reuse
+        if: github.event_name == 'push'
+        run: |
+          if [ -f .cache/pipeline/last-good-data/meta.json ] && [ -f .cache/pipeline/last-good-items/pages.json ]; then
+            mkdir -p web/public web/.item-data
+            cp -R .cache/pipeline/last-good-data web/public/data
+            cp .cache/pipeline/last-good-items/pages.json web/.item-data/pages.json
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            echo "generated_at=$(node -e 'console.log(require("./web/public/data/meta.json").generatedAt)')" >> "$GITHUB_OUTPUT"
+            echo "::notice::Code deploy: reusing the data from $(node -e 'console.log(require("./web/public/data/meta.json").generatedAt)')"
+          else
+            echo "No cached data yet: running the pipeline"
+          fi
+
       - name: Run pipeline
         id: pipeline
+        if: steps.reuse.outputs.ok != 'true'
         run: node pipeline/src/run.ts
 
       # A list that came out empty or collapsed keeps its last good version (owner rule, 2026-10-18).
       # The last good data rides in the pipeline cache saved right after.
       - name: Keep last good data
-        run: node pipeline/src/keep-good.ts web/public/data .cache/pipeline/last-good-data "$RUNNER_TEMP/data-warning.md"
+        if: steps.pipeline.outcome == 'success'
+        run: |
+          node pipeline/src/keep-good.ts web/public/data .cache/pipeline/last-good-data "$RUNNER_TEMP/data-warning.md"
+          mkdir -p .cache/pipeline/last-good-items && cp web/.item-data/pages.json .cache/pipeline/last-good-items/pages.json
 
       - name: Save pipeline cache
         uses: actions/cache/save@v4
@@ -120,7 +142,7 @@ jobs:
       # Verify, don't assume: the live meta.json must carry this run's generatedAt.
       - name: Verify deploy
         env:
-          EXPECTED: ${{ steps.pipeline.outputs.generated_at }}
+          EXPECTED: ${{ steps.pipeline.outputs.generated_at || steps.reuse.outputs.generated_at }}
         run: |
           # Checks immediately; only waits between retries while the edge catches up.
           for i in 1 2 3 4 5 6; do
