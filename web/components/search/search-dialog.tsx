@@ -6,8 +6,11 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { SearchResults } from "@/components/search/search-results";
 import { preloadSearch, search, type SearchRow } from "@/lib/search";
 
-/** ⌘K / Ctrl+K / "/" search over repos, skills, MCP servers and agents. */
-export function SearchDialog({ compact = false }: { compact?: boolean }) {
+/**
+ * ⌘K / Ctrl+K / "/" search over repos, skills, MCP servers and agents. The menu renders a desktop and a
+ * phone trigger; only the one with `shortcuts` listens for keys, so a shortcut opens one dialog.
+ */
+export function SearchDialog({ compact = false, shortcuts = !compact }: { compact?: boolean; shortcuts?: boolean }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<SearchRow[]>([]);
@@ -15,6 +18,7 @@ export function SearchDialog({ compact = false }: { compact?: boolean }) {
   const seq = useRef(0);
 
   useEffect(() => {
+    if (!shortcuts) return;
     const onKey = (e: KeyboardEvent) => {
       const typing = e.target instanceof HTMLElement && (e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName));
       if ((e.key === "k" && (e.metaKey || e.ctrlKey)) || (e.key === "/" && !typing)) {
@@ -24,7 +28,7 @@ export function SearchDialog({ compact = false }: { compact?: boolean }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [shortcuts]);
 
   useEffect(() => {
     if (open) preloadSearch();
