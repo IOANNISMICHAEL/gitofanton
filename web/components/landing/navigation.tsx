@@ -8,7 +8,6 @@ const navLinks = [
   { name: "Trending", href: "/trending/" },
   { name: "Rising",   href: "/rising/"   },
   { name: "Gems",     href: "/gems/"     },
-  { name: "Top",      href: "/top/"      },
   { name: "Toolbox",  href: "/toolbox/"  },
   { name: "Categories", href: "/categories/" },
 ];

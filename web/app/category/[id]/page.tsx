@@ -3,8 +3,8 @@ import Link from "next/link";
 import { SiteShell } from "@/components/site-shell";
 import { CompactList } from "@/components/home/compact-list";
 import categoriesConfig from "../../../../config/categories.json";
-import { CATEGORIES, SITE_URL, categoryLabel, viewHref, type ListId, type WindowId } from "@/lib/data";
-import { readView } from "@/lib/server-data";
+import { CATEGORIES, SITE_URL, categoryLabel, isToolList, viewHref, type ListId, type WindowId } from "@/lib/data";
+import { readToolView, readView } from "@/lib/server-data";
 
 type Params = Promise<{ id: string }>;
 export const dynamicParams = false;
@@ -26,16 +26,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 function pick(list: ListId, window: WindowId | null, cat: string, n: number) {
-  let v = readView(list, window, cat);
-  if (v.items.length === 0 && window && window !== "all" && (list === "skills" || list === "mcp" || list === "agents")) v = readView(list, "all", cat);
-  return { items: v.items.slice(0, n), window: v.window, href: viewHref(list, v.window, cat) };
+  const v = isToolList(list) ? readToolView(list, "trending", cat) : readView(list, window, cat);
+  return { items: v.items.slice(0, n), href: viewHref(list, window, cat) };
 }
 
 export default async function CategoryPage({ params }: { params: Params }) {
   const { id } = await params;
   const label = categoryLabel(id);
   const trending = pick("trending", "week", id, 10);
-  const top = pick("top", "all", id, 10);
+  const rising = pick("rising", null, id, 10);
   const skills = pick("skills", "week", id, 6);
   const mcp = pick("mcp", "week", id, 6);
   const agents = pick("agents", "week", id, 6);
@@ -66,12 +65,12 @@ export default async function CategoryPage({ params }: { params: Params }) {
         <p className="mt-3 max-w-2xl text-muted-foreground">{about(id)}</p>
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
           <CompactList title="Trending this week" href={trending.href} items={trending.items} gainLabel="this week" showCategory={false} />
-          <CompactList title="Most starred" href={top.href} items={top.items} gainLabel={null} showCategory={false} />
+          <CompactList title="New & rising" href={rising.href} items={rising.items} gainLabel="this week" showCategory={false} />
         </div>
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
-          <CompactList title="Skills" href={skills.href} items={skills.items} gainLabel={skills.window === "all" ? null : "this week"} showCategory={false} empty="No skills in this category yet." />
-          <CompactList title="MCP servers" href={mcp.href} items={mcp.items} gainLabel={mcp.window === "all" ? null : "this week"} showCategory={false} empty="No MCP servers in this category yet." />
-          <CompactList title="Agents & plugins" href={agents.href} items={agents.items} gainLabel={agents.window === "all" ? null : "this week"} showCategory={false} empty="No agents or plugins in this category yet." />
+          <CompactList title="Skills" href={skills.href} items={skills.items} gainLabel="this week" showCategory={false} empty="No skills in this category yet." />
+          <CompactList title="MCP servers" href={mcp.href} items={mcp.items} gainLabel="this week" showCategory={false} empty="No MCP servers in this category yet." />
+          <CompactList title="Agents & plugins" href={agents.href} items={agents.items} gainLabel="this week" showCategory={false} empty="No agents or plugins in this category yet." />
         </div>
       </div>
     </SiteShell>

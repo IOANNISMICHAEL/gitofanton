@@ -4,11 +4,11 @@ import { ArrowRight } from "lucide-react";
 import { SiteShell } from "@/components/site-shell";
 import { RepoCard } from "@/components/lists/repo-card";
 import { LISTS, SITE_URL, type ListId } from "@/lib/data";
-import { readMeta, readView } from "@/lib/server-data";
+import { readMeta, readToolView } from "@/lib/server-data";
 
 const title = "Agent toolbox: skills, MCP servers and agents";
 const description =
-  "Agent Skills, MCP servers, coding agents and Claude Code plugins in one place, ranked by how fast the projects behind them are growing. Updated every 4 hours.";
+  "Agent Skills, MCP servers, coding agents and Claude Code plugins in one place, with the GitHub stars and package downloads behind them. Updated every 4 hours.";
 
 export const metadata: Metadata = {
   title,
@@ -43,9 +43,7 @@ export default function ToolboxPage() {
         </header>
         {SECTIONS.map(({ list, key }) => {
           const L = LISTS[list];
-          let view = readView(list, "week");
-          // Early on (or for items without a tracked repo) the weekly list can be empty: fall back to All time.
-          if (view.items.length === 0) view = readView(list, "all");
+          const view = readToolView(list);
           const count = key === "agent" ? (meta?.toolbox?.byType.agent?.total ?? 0) + (meta?.toolbox?.byType.plugin?.total ?? 0) : meta?.toolbox?.byType[key]?.total;
           return (
             <section key={list} className="mb-14" aria-labelledby={`h-${list}`}>
@@ -59,12 +57,12 @@ export default function ToolboxPage() {
               </div>
               <p className="mb-2 text-sm text-muted-foreground">{L.blurb}</p>
               {view.items.length === 0 ? (
-                <p className="py-8 text-sm text-muted-foreground">Being collected: the first items appear after the next nightly discovery run.</p>
+                <p className="py-8 text-sm text-muted-foreground">Being collected: the first items appear after the next discovery run (twice a day).</p>
               ) : (
                 <ol className="list-none">
                   {view.items.slice(0, 6).map((item, i) => (
                     <li key={item.id}>
-                      <RepoCard item={item} rank={i + 1} gainLabel={view.window === "all" ? null : "this week"} asOf={asOf} />
+                      <RepoCard item={item} rank={i + 1} gainLabel="this week" asOf={asOf} />
                     </li>
                   ))}
                 </ol>

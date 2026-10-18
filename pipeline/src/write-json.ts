@@ -108,7 +108,6 @@ export function writeAll(outDir: string, repos: Scored[], now: Date, meta: Recor
       writeView(`${dir}/all.json`, { list, window: w, category: 'all', lang: null }, ranked)
       for (const c of CATEGORIES) {
         const inCat = ranked.filter((r) => r.category === c)
-        if (list === 'top' && w === 'all') categoryCounts[c] = inCat.length
         writeView(`${dir}/${c}.json`, { list, window: w, category: c, lang: null }, inCat)
       }
       if (list === 'trending' && w) {
@@ -118,6 +117,8 @@ export function writeAll(outDir: string, repos: Scored[], now: Date, meta: Recor
       }
     }
   }
+
+  for (const r of repos) if (isEligible(r)) categoryCounts[r.category] = (categoryCounts[r.category] ?? 0) + 1
 
   // Flagged repos leave every list and radar; the site shows them only behind "Show flagged".
   const flagged = repos.filter((r) => r.flag && isEligible(r, true)).sort((a, b) => b.gain.week - a.gain.week)

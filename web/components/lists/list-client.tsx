@@ -22,16 +22,14 @@ const SORTS: Record<SortId, { label: string; key: (i: Item) => number | string }
 
 export function sortOptions(list: ListId, window: WindowId | null): SortId[] {
   const dl: SortId[] = LISTS[list].hasDownloads ? ["downloads"] : [];
-  if (list === "top" && window === "all") return ["total", "newest", "updated"];
-  if (isToolList(list) && window === "all") return ["total", ...dl, "newest", "updated"];
+  if (isToolList(list)) return []; // toolbox: the sort is the page menu, each order pre-ranked over every item
   const momentum: SortId[] = list === "trending" || isToolList(list) ? ["momentum"] : [];
   return [...momentum, "gained", "total", ...dl, "growth", "newest", "updated", "forks"];
 }
 
 /** The order the pipeline wrote (the list's own ranking). */
 export function defaultSort(list: ListId, window: WindowId | null): SortId {
-  if (list === "top") return window === "all" ? "total" : "gained";
-  if (isToolList(list)) return window === "all" ? "total" : "momentum";
+  if (isToolList(list)) return "momentum";
   if (list === "trending") return "momentum";
   return list === "rising" ? "gained" : "growth";
 }
@@ -151,6 +149,7 @@ export function ListClient({
             </label>
           ) : null}
         </span>
+        {options.length > 0 ? (
         <label className="inline-flex items-center gap-2">
           Sort by
           <select
@@ -165,11 +164,14 @@ export function ListClient({
             ))}
           </select>
         </label>
+        ) : null}
       </div>
 
       {shown.length === 0 ? (
         <p className="py-16 text-center text-muted-foreground">
-          Nothing matches yet. Star history started on 17 October 2026, so weekly and monthly lists fill in over the coming days.
+          {isToolList(list)
+            ? "Being collected: the first items appear after the next discovery run (twice a day)."
+            : "Nothing matches yet. Star history started on 17 October 2026, so weekly and monthly lists fill in over the coming days."}
         </p>
       ) : (
         <ol className="list-none">

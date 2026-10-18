@@ -64,8 +64,10 @@ async function rollover(state: State, today: string) {
   const day = state.day
   const act = state.activity[day] ?? {}
   const rows: [number, string, number, number, number, number][] = []
+  const prevDay: Record<string, number> = {}
   for (const [id, t] of Object.entries(state.repos)) {
     const stars = t[1] - t[3]
+    if (stars > 0) prevDay[id] = stars
     if (stars >= DAILY_MIN_STARS) {
       const a = act[id] ?? [0, 0, 0, 0]
       rows.push([Number(id), day, stars, Math.max(0, t[2] - t[4]), a[3], a[2]])
@@ -74,6 +76,7 @@ async function rollover(state: State, today: string) {
     t[4] = t[2]
   }
   await writeDailyStats(rows)
+  state.prevDay = prevDay
   log('rollover: daily_stats written', { day, rows: rows.length })
 
   const lastDay = addDays(today, -1)
@@ -200,6 +203,10 @@ async function main() {
   }
   if (adopted) log('tracking repos added by other jobs', { adopted })
   const todayAct = state.activity[today] ?? {}
+  // "Today" is the last 24 hours, not the UTC day so far: since midnight plus the matching share of
+  // yesterday, so the list doesn't empty out at 00:00 UTC.
+  const dayLeft = 1 - (now.getTime() - Date.parse(`${today}T00:00:00Z`)) / 86_400_000
+  const prevDay = state.prevDay ?? {}
   const scored: Scored[] = []
   for (const r of rows) {
     const t = state.repos[r.id]
@@ -207,6 +214,7 @@ async function main() {
     const ov = overrides[r.full_name] ?? {}
     const s = win.sums[r.id] ?? [0, 0, 0, 0, 0, 0]
     const g1 = Math.max(0, t[1] - t[3])
+    const g24 = g1 + Math.round((prevDay[r.id] ?? 0) * dayLeft)
     const f1 = Math.max(0, t[2] - t[4])
     const a = todayAct[r.id] ?? [0, 0, 0, 0]
     const topics = JSON.parse(r.topics ?? '[]') as string[]
@@ -223,7 +231,7 @@ async function main() {
       // Rules first (topics are reliable); the classifier's stored pick (discover.yml) for what they leave in "other".
       category: ov.category ?? pickCategory(categorise({ topics, description: r.description, language: r.language }), r),
       stars: t[1],
-      gain: { today: g1, week: g1 + s[0], month: g1 + s[1], all: g1 + (s[5] ?? s[1]) },
+      gain: { today: g24, week: g1 + s[0], month: g1 + s[1], all: g1 + (s[5] ?? s[1]) },
       forks: { today: f1, week: f1 + s[2], month: f1 + (s[4] ?? s[2]), all: t[2] },
       activity7: s[3] + a[2] + a[3],
       isFork: !!r.is_fork,

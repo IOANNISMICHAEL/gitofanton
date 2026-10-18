@@ -12,42 +12,44 @@ import {
   categoryLabel,
   isToolList,
   languageName,
+  toolDataPath,
+  toolHref,
+  toolSortOf,
+  toolSortsFor,
   viewDataPath,
   viewHref,
   windowOf,
   type ListId,
+  type ToolSortId,
   type WindowId,
 } from "@/lib/data";
-import { readMeta, readView } from "@/lib/server-data";
+import { readMeta, readToolView, readView } from "@/lib/server-data";
 import { cn } from "@/lib/utils";
 
 const OG_IMAGE = { url: "/og.png", width: 1200, height: 630, alt: "Git of Anton" };
 
-type ViewProps = { list: ListId; window: WindowId | null; category?: string; lang?: string | null };
+type ViewProps = { list: ListId; window: WindowId | null; category?: string; lang?: string | null; sort?: ToolSortId };
 
-function describe({ list, window, category = "all", lang = null }: ViewProps) {
+function describe({ list, window, category = "all", lang = null, sort = "trending" }: ViewProps) {
   const L = LISTS[list];
   const scope = lang ? `${languageName(lang)} ` : category !== "all" ? `${categoryLabel(category)} ` : "";
   const when = !window ? "" : window === "all" ? (list === "trending" ? "since tracking began" : "of all time") : windowOf(window).phrase;
   const heading = lang || category !== "all" ? `${L.title}: ${lang ? languageName(lang) : categoryLabel(category)}` : L.title;
   const title = isToolList(list)
-    ? `${window === "all" ? "Most starred" : "Trending"} ${scope}${L.noun} ${window === "all" ? "" : when}`.trim()
-    : list === "top"
-      ? window === "all"
-        ? `Most starred ${scope}GitHub repositories of all time`
-        : `Most stars gained ${when}: ${scope}GitHub repositories`
-      : list === "gems"
+    ? `${toolSortOf(sort).label} ${L.noun}`
+    : list === "gems"
         ? `Hidden gems: fast-growing small ${scope}GitHub repositories`
         : list === "rising"
           ? `Rising: new ${scope}GitHub repositories gaining stars`
           : `${L.title} ${scope}GitHub repositories ${when}`;
-  const description = `${L.blurb} ${scope ? `Showing ${scope.trim()} projects. ` : ""}Updated every 4 hours.`;
-  return { heading, title, description };
+  const blurb = isToolList(list) ? `${L.blurb} ${toolSortOf(sort).blurb}` : L.blurb;
+  const description = `${blurb} ${scope ? `Showing ${scope.trim()} projects. ` : ""}Updated every 4 hours.`;
+  return { heading, title, description, blurb };
 }
 
 export function viewMetadata(p: ViewProps): Metadata {
   const { title, description } = describe(p);
-  const url = viewHref(p.list, p.window, p.category, p.lang ?? null);
+  const url = isToolList(p.list) ? toolHref(p.list, p.sort) : viewHref(p.list, p.window, p.category, p.lang ?? null);
   return {
     title,
     description,
@@ -59,12 +61,13 @@ export function viewMetadata(p: ViewProps): Metadata {
 }
 
 export function ListPage(p: ViewProps) {
-  const { list, window, category = "all", lang = null } = p;
+  const { list, window, category = "all", lang = null, sort = "trending" } = p;
   const L = LISTS[list];
-  const view = readView(list, window, category, lang);
+  const tool = isToolList(list);
+  const view = tool ? readToolView(list, sort) : readView(list, window, category, lang);
   const meta = readMeta();
-  const { heading } = describe(p);
-  const href = viewHref(list, window, category, lang);
+  const { heading, blurb } = describe(p);
+  const href = tool ? toolHref(list, sort) : viewHref(list, window, category, lang);
   const first = view.items.slice(0, 25);
 
   const jsonLd = [
@@ -119,9 +122,26 @@ export function ListPage(p: ViewProps) {
             <Link href={`${L.base}/`} className="hover:text-foreground">{L.title}</Link>
           </nav>
           <h1 className="font-display text-5xl tracking-tight text-foreground text-glow sm:text-7xl">{heading}</h1>
-          <p className="mt-4 max-w-2xl text-lg text-muted-foreground">{L.blurb}</p>
+          <p className="mt-4 max-w-2xl text-lg text-muted-foreground">{blurb}</p>
         </header>
 
+        {tool ? (
+          <nav aria-label="Sort by" className="mb-4 flex flex-wrap gap-1 border-b border-border pb-4">
+            {toolSortsFor(list).map((s) => (
+              <Link
+                key={s.id}
+                href={toolHref(list, s.id)}
+                aria-current={s.id === sort ? "page" : undefined}
+                className={cn(
+                  "rounded-full border px-4 py-1.5 text-sm transition-colors",
+                  s.id === sort ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {s.label}
+              </Link>
+            ))}
+          </nav>
+        ) : (
         <div className="mb-4 space-y-3 border-b border-border pb-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             {L.windows ? (
@@ -165,6 +185,7 @@ export function ListPage(p: ViewProps) {
             })}
           </nav>
         </div>
+        )}
 
         <ListClient
           key={href}
@@ -172,7 +193,7 @@ export function ListPage(p: ViewProps) {
           window={window}
           initialItems={first}
           total={view.total}
-          dataPath={viewDataPath(list, window, category, lang)}
+          dataPath={tool ? toolDataPath(list, sort) : viewDataPath(list, window, category, lang)}
           category={category}
           lang={lang}
           flaggedCount={meta?.counts?.flagged ?? 0}
@@ -198,3 +219,4 @@ export const otherWindows = (list: ListId) => windowsOf(list).filter((w) => w !=
 export const windowCategoryParams = (list: ListId) => windowsOf(list).flatMap((w) => CATEGORIES.map((c) => ({ window: w, category: c.id })));
 export const windowLangParams = () => windowsOf("trending").flatMap((w) => LANGUAGES.map((l) => ({ window: w, lang: l.slug })));
 export const categoryParams = () => CATEGORIES.map((c) => ({ category: c.id }));
+export const toolSortParams = (list: ListId) => toolSortsFor(list).filter((s) => s.id !== "trending").map((s) => ({ sort: s.id }));

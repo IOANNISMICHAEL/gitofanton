@@ -19,6 +19,7 @@ export type State = {
   activity: Record<string, Activity> // GH Archive activity by UTC day (today and yesterday)
   seed: { built: boolean; queue: SeedTask[]; recentDay: string | null }
   trust?: Record<string, TrustRecord> // fake-star verdicts by repo id (absent in state written before M4)
+  prevDay?: Record<string, number> // stars gained on the previous UTC day, for the rolling 24-hour "today"
 }
 
 /** Window sums from finalized daily_stats rows: id → [stars7, stars30, forks7, activity7, forks30, starsAllHistory]. The last two are absent in windows written before 2026-10-18. */

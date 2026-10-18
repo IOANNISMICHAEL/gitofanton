@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # keep-alive commit below
+      issues: write # data warnings (keep-good step) reach the owner as a GitHub issue email
     timeout-minutes: 20
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -59,6 +60,11 @@ jobs:
         id: pipeline
         run: node pipeline/src/run.ts
 
+      # A list that came out empty or collapsed keeps its last good version (owner rule, 2026-10-18).
+      # The last good data rides in the pipeline cache saved right after.
+      - name: Keep last good data
+        run: node pipeline/src/keep-good.ts web/public/data .cache/pipeline/last-good-data "$RUNNER_TEMP/data-warning.md"
+
       - name: Save pipeline cache
         uses: actions/cache/save@v4
         with:
@@ -99,6 +105,22 @@ jobs:
           done
           echo "::error::Live meta.json does not match this run"
           exit 1
+
+      # One open "Data warning" issue at a time: opened or commented on when lists were kept,
+      # closed by the next clean run. GitHub emails the repo owner about it.
+      - name: Data warning issue
+        if: always() && steps.pipeline.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Data warning: some lists kept old data"
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          if [ -s "$RUNNER_TEMP/data-warning.md" ]; then
+            if [ -n "$open" ]; then gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/data-warning.md"
+            else gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file "$RUNNER_TEMP/data-warning.md"; fi
+          elif [ -n "$open" ]; then
+            gh issue close "$open" --repo "$GITHUB_REPOSITORY" --comment "Back to normal: run ${{ github.run_id }} refreshed every list."
+          fi
 
       # GitHub pauses scheduled workflows in public repos after 60 days without repository activity.
       - name: Keep the schedule alive

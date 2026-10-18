@@ -3,7 +3,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { CATEGORIES, VIEW_SIZE } from './config.ts'
-import { WINDOWS, score, type Scored, type Window } from './score.ts'
+import { score, type Scored } from './score.ts'
 import type { ToolRead } from './tools.ts'
 import { log } from './util.ts'
 
@@ -64,14 +64,31 @@ function link(t: ToolRead, repo: string | null) {
   return t.repo_url ?? t.website
 }
 
-/** Rank one list in one window: growth momentum for time windows; stars, then downloads, for All time. */
-export function rankTools(items: Entry[], w: Window) {
-  const g = (x: { repo?: Scored }) => (x.repo ? x.repo.gain[w] : 0)
-  const s = (x: { repo?: Scored }) => x.repo?.stars ?? 0
-  const ranked =
-    w === 'all'
-      ? [...items].sort((a, b) => s(b) - s(a) || (b.dl ?? 0) - (a.dl ?? 0))
-      : items.filter((x) => g(x) > 0).sort((a, b) => score(g(b), s(b)) - score(g(a), s(a)) || (b.dl ?? 0) - (a.dl ?? 0))
+/**
+ * Toolbox pages have no time tabs or category chips: the sort is the menu (owner, 2026-10-18), and each
+ * sort is its own pre-ranked file, because a list holds up to 17k items and the browser only gets 500.
+ *   trending:  this week's repo growth, size-adjusted (items without growth follow, by stars)
+ *   stars, downloads, newest (first seen), updated (last push)
+ */
+export const TOOL_SORTS = ['trending', 'stars', 'downloads', 'newest', 'updated'] as const
+export type ToolSort = (typeof TOOL_SORTS)[number]
+export const sortsFor = (list: ToolboxList): ToolSort[] => TOOL_SORTS.filter((s) => s !== 'downloads' || list === 'mcp')
+
+const CATEGORY_FILE_SIZE = 20 // category pages show the first few of each toolbox list
+
+export function rankTools(items: Entry[], sort: ToolSort) {
+  const g = (x: Entry) => x.repo?.gain.week ?? 0
+  const s = (x: Entry) => x.repo?.stars ?? 0
+  const dl = (x: Entry) => x.dl ?? -1
+  const push = (x: Entry) => x.repo?.pushedAt ?? ''
+  const cmp: Record<ToolSort, (a: Entry, b: Entry) => number> = {
+    trending: (a, b) => score(g(b), s(b)) - score(g(a), s(a)) || s(b) - s(a) || dl(b) - dl(a),
+    stars: (a, b) => s(b) - s(a) || dl(b) - dl(a),
+    downloads: (a, b) => dl(b) - dl(a) || s(b) - s(a),
+    newest: (a, b) => b.t.first_seen.localeCompare(a.t.first_seen) || s(b) - s(a),
+    updated: (a, b) => push(b).localeCompare(push(a)) || s(b) - s(a),
+  }
+  const ranked = (sort === 'downloads' ? items.filter((x) => x.dl != null) : items).slice().sort(cmp[sort])
   const perRepo = new Map<number, number>()
   return ranked.filter((x) => {
     if (!x.t.repo_id) return true
@@ -85,48 +102,52 @@ export function writeToolbox(outDir: string, tools: ToolRead[], downloads: Map<n
   const publishers = publisherCounts(tools)
   const counts: Record<string, number> = {}
   let files = 0
+  const toItem = (x: Entry): ToolItem => {
+    const r = x.repo
+    const repoName = r?.fullName ?? null
+    return {
+      id: x.t.id,
+      ty: x.t.type,
+      n: x.t.title || x.t.name.split('/').pop() || x.t.name,
+      rp: repoName,
+      u: link(x.t, repoName),
+      d: x.t.description,
+      c: x.t.category,
+      s: r?.stars ?? 0,
+      g: r ? r.gain.week : 0,
+      fg: r ? r.forks.week : 0,
+      dl: x.dl ?? null,
+      a: r?.avatarUrl ?? null,
+      cr: x.t.first_seen.slice(0, 10),
+      p: r?.pushedAt?.slice(0, 10) ?? null,
+      ...(x.t.package ? { pk: x.t.package } : {}),
+      ...(x.t.remote ? { rm: 1 as const } : {}),
+      ...(now.getTime() - Date.parse(x.t.first_seen) <= 7 * 86_400_000 ? { new: 1 as const } : {}),
+      ...(r?.flag ? { f: r.flag } : {}),
+    }
+  }
+  const write = (rel: string, body: unknown) => {
+    const p = join(outDir, 'data', 'toolbox', rel)
+    mkdirSync(dirname(p), { recursive: true })
+    writeFileSync(p, JSON.stringify(body))
+    files++
+  }
   for (const list of TOOLBOX_LISTS) {
     const items: Entry[] = tools
       .filter((t) => TYPES[list].includes(t.type))
       .map((t) => ({ t, repo: t.repo_id ? repos.get(t.repo_id) : undefined, dl: downloads.get(t.id) }))
-      .filter((x) => isListed(x.t, x.repo, x.dl, publishers))
+      .filter((x) => isListed(x.t, x.repo, x.dl, publishers) && !x.repo?.flag)
     counts[list] = items.length
-    for (const w of WINDOWS) {
-      const ranked = rankTools(items, w)
-      counts[`${list}.${w}`] = ranked.length
-      const toItem = (x: Entry): ToolItem => {
-        const r = x.repo
-        const repoName = r?.fullName ?? null
-        return {
-          id: x.t.id,
-          ty: x.t.type,
-          n: x.t.title || x.t.name.split('/').pop() || x.t.name,
-          rp: repoName,
-          u: link(x.t, repoName),
-          d: x.t.description,
-          c: x.t.category,
-          s: r?.stars ?? 0,
-          g: r ? r.gain[w] : 0,
-          fg: r ? r.forks[w] : 0,
-          dl: x.dl ?? null,
-          a: r?.avatarUrl ?? null,
-          cr: x.t.first_seen.slice(0, 10),
-          p: r?.pushedAt?.slice(0, 10) ?? null,
-          ...(x.t.package ? { pk: x.t.package } : {}),
-          ...(x.t.remote ? { rm: 1 as const } : {}),
-          ...(now.getTime() - Date.parse(x.t.first_seen) <= 7 * 86_400_000 ? { new: 1 as const } : {}),
-          ...(r?.flag ? { f: r.flag } : {}),
+    for (const sort of sortsFor(list)) {
+      const ranked = rankTools(items, sort)
+      counts[`${list}.${sort}`] = ranked.length
+      write(`${list}/${sort}.json`, { list, sort, category: 'all', total: ranked.length, items: ranked.slice(0, VIEW_SIZE).map(toItem) })
+      if (sort === 'trending') {
+        for (const c of CATEGORIES) {
+          const inCat = ranked.filter((x) => x.t.category === c)
+          write(`${list}/category/${c}.json`, { list, sort, category: c, total: inCat.length, items: inCat.slice(0, CATEGORY_FILE_SIZE).map(toItem) })
         }
       }
-      const write = (cat: string, list2: typeof ranked) => {
-        const p = join(outDir, 'data', 'toolbox', list, w, `${cat}.json`)
-        mkdirSync(dirname(p), { recursive: true })
-        const unflagged = list2.filter((x) => !x.repo?.flag)
-        writeFileSync(p, JSON.stringify({ list, window: w, category: cat, lang: null, total: unflagged.length, items: unflagged.slice(0, VIEW_SIZE).map(toItem) }))
-        files++
-      }
-      write('all', ranked)
-      for (const c of CATEGORIES) write(c, ranked.filter((x) => x.t.category === c))
     }
   }
   // Per-category counts (listed items of every type) for the front page's category cards.
@@ -136,7 +157,7 @@ export function writeToolbox(outDir: string, tools: ToolRead[], downloads: Map<n
     const repo = t.repo_id ? repos.get(t.repo_id) : undefined
     if (isListed(t, repo, downloads.get(t.id), publishers)) byCategory[t.category] = (byCategory[t.category] ?? 0) + 1
   }
-  writeFileSync(join(outDir, 'data', 'toolbox', 'meta.json'), JSON.stringify({ counts, byCategory }))
+  write('meta.json', { counts, byCategory })
   log('toolbox', counts)
   return { files, counts }
 }

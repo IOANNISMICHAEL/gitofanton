@@ -7,8 +7,8 @@ import { CategoryGrid } from "@/components/home/category-grid";
 import { Metrics } from "@/components/home/metrics";
 import { ParticleTitle } from "@/components/fx/particle-title";
 import { NeonCard } from "@/components/fx/neon-card";
-import { SITE_URL, type Item, type ListId, type WindowId } from "@/lib/data";
-import { readMeta, readToolboxMeta, readView } from "@/lib/server-data";
+import { SITE_URL, isToolList, type Item, type ListId, type WindowId } from "@/lib/data";
+import { readMeta, readToolView, readToolboxMeta, readView } from "@/lib/server-data";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
@@ -20,18 +20,17 @@ const jsonLd = {
   description: "Trending GitHub repositories, agent skills, MCP servers and coding agents, ranked from GitHub star activity every 4 hours.",
 };
 
-/** Top N of a view; for toolbox lists, falls back to All time while weekly history is still empty. */
-function top(list: ListId, window: WindowId | null, n: number): { items: Item[]; window: WindowId | null } {
-  let v = readView(list, window);
-  if (v.items.length === 0 && window && window !== "all" && (list === "skills" || list === "mcp" || list === "agents")) v = readView(list, "all");
-  return { items: v.items.slice(0, n), window: v.window };
+/** First N items of a repo list, or of a toolbox list in its default (Trending) order. */
+function top(list: ListId, window: WindowId | null, n: number): { items: Item[] } {
+  const v = isToolList(list) ? readToolView(list) : readView(list, window);
+  return { items: v.items.slice(0, n) };
 }
 
 export default function Home() {
   const meta = readMeta();
   const toolMeta = readToolboxMeta();
   const today = top("trending", "today", 10);
-  const week = top("top", "week", 10);
+  const week = top("trending", "week", 10);
   const rising = top("rising", null, 8);
   const gems = top("gems", null, 8);
   const skills = top("skills", "week", 6);
@@ -80,7 +79,7 @@ export default function Home() {
         {/* GitHub */}
         <div className="mt-10 grid gap-4 lg:grid-cols-2">
           <CompactList title="Trending today" subtitle="Fastest growing today, adjusted for size." href="/trending/" items={today.items} gainLabel="today" />
-          <CompactList title="Top this week" subtitle="Most stars gained in the last 7 days." href="/top/week/" items={week.items} gainLabel="this week" />
+          <CompactList title="Trending this week" subtitle="Fastest growing over 7 days, adjusted for size." href="/trending/week/" items={week.items} gainLabel="this week" />
           <CompactList title="New & rising" subtitle="Created in the last 90 days, by stars this week." href="/rising/" items={rising.items} gainLabel="this week" />
           <CompactList title="Hidden gems" subtitle="Small projects (50–2,000 stars) growing fast." href="/gems/" items={gems.items} gainLabel="this week" />
         </div>
@@ -101,9 +100,9 @@ export default function Home() {
             <Link href="/toolbox/" className="text-sm text-muted-foreground hover:text-foreground">Open the toolbox</Link>
           </div>
           <div className="grid gap-4 lg:grid-cols-3">
-            <CompactList title="Skills" href="/toolbox/skills/" items={skills.items} gainLabel={skills.window === "all" ? null : "this week"} showCategory={false} empty="Collected nightly; first skills appear after the next discovery run." />
-            <CompactList title="MCP servers" href="/toolbox/mcp/" items={mcp.items} gainLabel={mcp.window === "all" ? null : "this week"} showCategory={false} />
-            <CompactList title="Agents & plugins" href="/toolbox/agents/" items={agents.items} gainLabel={agents.window === "all" ? null : "this week"} showCategory={false} empty="Collected nightly; first agents appear after the next discovery run." />
+            <CompactList title="Skills" href="/toolbox/skills/" items={skills.items} gainLabel="this week" showCategory={false} empty="Being collected: the first skills appear after the next discovery run." />
+            <CompactList title="MCP servers" href="/toolbox/mcp/" items={mcp.items} gainLabel="this week" showCategory={false} />
+            <CompactList title="Agents & plugins" href="/toolbox/agents/" items={agents.items} gainLabel="this week" showCategory={false} empty="Being collected: the first agents appear after the next discovery run." />
           </div>
         </section>
 

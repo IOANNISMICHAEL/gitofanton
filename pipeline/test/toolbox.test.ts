@@ -62,16 +62,17 @@ test('bulk MCP publishers are listed only with real use', () => {
   assert.equal(isListed(tool({ type: 'skill', status: 'removed' }), undefined, undefined, pubs), false)
 })
 
-test('rankTools: growth for time windows, at most 3 items per repo', () => {
+test('rankTools: one ranking per sort, at most 3 items per repo', () => {
   const r = repo(7, 1000, 50)
   const many = Array.from({ length: 5 }, () => ({ t: tool({ type: 'skill', repo_id: 7 }), repo: r }))
   const other = { t: tool({ type: 'skill', repo_id: 8 }), repo: repo(8, 100, 20) }
   const idle = { t: tool({ type: 'skill' }), dl: 999 }
-  const week = rankTools([...many, other, idle], 'week')
-  assert.equal(week.filter((x) => x.t.repo_id === 7).length, MAX_PER_REPO)
-  assert.equal(week[0].t.repo_id, 7) // momentum: 50 / log10(1100) = 16.4 beats 20 / log10(200) = 8.7
-  assert.ok(!week.includes(idle)) // no growth signal: not in time-window lists
-  assert.equal(rankTools([idle, other], 'all')[0], other) // All time: stars first, then downloads
+  const trending = rankTools([...many, other, idle], 'trending')
+  assert.equal(trending.filter((x) => x.t.repo_id === 7).length, MAX_PER_REPO)
+  assert.equal(trending[0].t.repo_id, 7) // momentum: 50 / log10(1100) = 16.4 beats 20 / log10(200) = 8.7
+  assert.equal(trending.at(-1), idle) // no growth signal: still listed, last
+  assert.equal(rankTools([other, idle], 'stars')[0], other)
+  assert.deepEqual(rankTools([other, idle], 'downloads'), [idle]) // only items with a package
 })
 
 test('decide: confident best match or null', () => {

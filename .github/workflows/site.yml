@@ -53,3 +53,4 @@ jobs:
     secrets: inherit
     permissions:
       contents: write # the called job's keep-alive commit; a caller must grant what its callee asks for
+      issues: write # the called job's data-warning issue

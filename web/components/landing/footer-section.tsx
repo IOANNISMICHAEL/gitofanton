@@ -5,7 +5,6 @@ const footerLinks = {
     { name: "Trending", href: "/trending/" },
     { name: "Rising", href: "/rising/" },
     { name: "Hidden gems", href: "/gems/" },
-    { name: "Most starred", href: "/top/" },
   ],
   Explore: [
     { name: "Agent toolbox", href: "/toolbox/" },

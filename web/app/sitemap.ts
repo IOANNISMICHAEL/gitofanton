@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { CATEGORIES, LANGUAGES, LISTS, SITE_URL, viewHref, type ListId } from "@/lib/data";
+import { CATEGORIES, LANGUAGES, LISTS, SITE_URL, isToolList, toolHref, toolSortsFor, viewHref, type ListId } from "@/lib/data";
 import { readMeta } from "@/lib/server-data";
 
 export const dynamic = "force-static";
@@ -9,6 +9,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const urls = new Set<string>(["/", "/toolbox/", "/categories/"]);
   for (const c of CATEGORIES) urls.add(`/category/${c.id}/`);
   for (const list of Object.keys(LISTS) as ListId[]) {
+    if (isToolList(list)) {
+      for (const s of toolSortsFor(list)) urls.add(toolHref(list, s.id));
+      continue;
+    }
     const windows = LISTS[list].windows ?? [null];
     for (const w of windows) {
       urls.add(viewHref(list, w));

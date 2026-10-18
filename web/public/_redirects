@@ -1,0 +1,15 @@
+# Pages that moved (2026-10-18). Cloudflare static-assets redirects.
+/top/* /trending/week/ 301
+/top /trending/week/ 301
+/toolbox/skills/today/* /toolbox/skills/ 301
+/toolbox/skills/week/* /toolbox/skills/ 301
+/toolbox/skills/month/* /toolbox/skills/ 301
+/toolbox/skills/all/* /toolbox/skills/stars/ 301
+/toolbox/mcp/today/* /toolbox/mcp/ 301
+/toolbox/mcp/week/* /toolbox/mcp/ 301
+/toolbox/mcp/month/* /toolbox/mcp/ 301
+/toolbox/mcp/all/* /toolbox/mcp/stars/ 301
+/toolbox/agents/today/* /toolbox/agents/ 301
+/toolbox/agents/week/* /toolbox/agents/ 301
+/toolbox/agents/month/* /toolbox/agents/ 301
+/toolbox/agents/all/* /toolbox/agents/stars/ 301

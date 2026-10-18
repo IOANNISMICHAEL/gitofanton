@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { gems, isEligible, rank, rising, score, top, trending, type Scored } from '../src/score.ts'
+import { gems, isEligible, rank, rising, score, trending, type Scored } from '../src/score.ts'
 import { buildRadar, compactStars, slug } from '../src/write-json.ts'
 import { makeCategoriser, loadRules } from '../src/categorise.ts'
 
@@ -28,15 +28,6 @@ test('trending prefers smaller repos at equal gain and drops ineligible ones', (
   const flagged = repo({ stars: 5_000, week: 900, flag: 'Burst' })
   assert.deepEqual(trending([big, small, tiny, fork, flagged], 'week').map((r) => r.id), [small.id, big.id])
   assert.equal(isEligible(flagged, true), true)
-})
-
-test('Top: most stars gained in the window; All time: most stars overall', () => {
-  const big = repo({ stars: 90_000, week: 100 })
-  const fast = repo({ stars: 900, week: 400 })
-  const idle = repo({ stars: 5000 })
-  assert.deepEqual(top([big, fast, idle], 'week').map((r) => r.id), [fast.id, big.id]) // raw gain, idle left out
-  assert.deepEqual(top([big, fast, idle], 'all').map((r) => r.id), [big.id, idle.id, fast.id])
-  assert.deepEqual(rank('top', [big, fast], 'all', now).map((r) => r.id), [big.id, fast.id])
 })
 
 test('Trending All time ranks by stars gained since tracking began, size-adjusted', () => {
