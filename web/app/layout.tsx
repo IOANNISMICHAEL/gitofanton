@@ -1,5 +1,5 @@
 import React from "react"
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
@@ -41,8 +41,20 @@ export const metadata: Metadata = {
     images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Git of Anton' }],
     type: 'website',
   },
-  twitter: { card: 'summary_large_image' },
+  twitter: { card: 'summary_large_image', images: ['/og.png'] },
+  // Brand pack (2026-10-18): the grid "A" on the tab (switches with the OS theme), full mark elsewhere.
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/apple-touch-icon.png',
+    other: [{ rel: 'mask-icon', url: '/safari-pinned-tab.svg', color: '#08090C' }],
+  },
+  manifest: '/site.webmanifest',
 }
+
+export const viewport: Viewport = { themeColor: '#08090C' }
 
 export default function RootLayout({
   children,
