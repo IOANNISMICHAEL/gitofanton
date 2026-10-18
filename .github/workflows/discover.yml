@@ -3,8 +3,11 @@ name: discover
 # Daily: new and changed Agent toolbox items (MCP servers, later skills and agents), their GitHub
 # repos, and weekly package downloads. Writes D1 only; the 4-hourly data job publishes the results.
 on:
+  # Twice a day: GitHub sometimes drops scheduled runs, and a run that finds nothing new is cheap
+  # (each step resumes or skips what's done; the D1 write budget is per UTC day).
   schedule:
     - cron: '37 2 * * *'
+    - cron: '37 14 * * *'
   workflow_dispatch:
 
 concurrency:
