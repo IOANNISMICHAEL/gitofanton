@@ -121,4 +121,8 @@ test('item pages: safe unique URLs, best of stars rank and momentum rank', async
   const two = selectPages([big, fast, quiet], new Map(), [], new Map(), 2)
   assert.deepEqual(two.picked.map((x) => x.p).sort(), ['repo/o/r201', 'repo/o/r202']) // #1 by stars, #1 by momentum
   assert.equal(two.repoPath.get(203), undefined)
+  // An MCP server with no stars still gets a page through its type's share.
+  const mcp = tool({ type: 'mcp', name: 'io.acme/zero' })
+  const withMcp = selectPages([big, fast, quiet], new Map(), [mcp], new Map(), 10)
+  assert.ok(withMcp.picked.some((x) => x.p === 'mcp/io.acme/zero'))
 })

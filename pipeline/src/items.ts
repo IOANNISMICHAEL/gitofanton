@@ -11,6 +11,13 @@ import type { ToolRead } from './tools.ts'
 import { chunk, log } from './util.ts'
 
 export const ITEM_PAGES = 10_000
+/** Minimum share of the pages per type; unused shares fall to the best of the rest. */
+export const PAGE_SHARES: [PageKind[], number][] = [
+  [['mcp'], 0.2],
+  [['skill'], 0.15],
+  [['agent', 'plugin'], 0.1],
+  [['repo'], 0.45],
+]
 export const HISTORY_DAYS = 90
 const SIMILAR = 6
 
@@ -100,7 +107,19 @@ export function selectPages(repos: Scored[], rows: Map<number, RepoRow>, tools: 
   const best = new Map<Cand, number>()
   byStars.forEach((c, i) => best.set(c, i))
   byMom.forEach((c, i) => best.set(c, Math.min(best.get(c)!, c.mom > 0 ? i : Infinity)))
-  const picked = cands.sort((a, b) => best.get(a)! - best.get(b)! || b.stars - a.stars).slice(0, size)
+  const order = (a: Cand, b: Cand) => best.get(a)! - best.get(b)! || b.stars - a.stars
+  // Each type first gets its share (most MCP servers have no stars and would never rank against
+  // repos), then any free slots go to the best of the rest.
+  const chosen = new Set<Cand>()
+  for (const [kinds, share] of PAGE_SHARES) {
+    const quota = Math.round(size * share)
+    for (const c of cands.filter((x) => kinds.includes(x.kind)).sort(order).slice(0, quota)) chosen.add(c)
+  }
+  for (const c of [...cands].sort(order)) {
+    if (chosen.size >= size) break
+    chosen.add(c)
+  }
+  const picked = [...chosen].sort(order).slice(0, size)
 
   // Stable, unique URLs: a clash (two skills with one name in a repo) gets -2, -3, …
   const used = new Set<string>()
