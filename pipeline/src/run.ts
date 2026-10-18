@@ -276,5 +276,7 @@ async function main() {
 
 main().catch((e) => {
   console.error(e)
+  // Annotations are public (readable without signing in), unlike the log.
+  console.log(`::error::${String(e instanceof Error ? e.message : e).replace(/\s+/g, ' ').slice(0, 900)}`)
   process.exit(1)
 })

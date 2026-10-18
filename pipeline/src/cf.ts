@@ -41,11 +41,14 @@ export const writeBudgetLeft = () => guard - writtenTodayBefore - writtenThisRun
 
 export const d1Usage = () => ({ writtenThisRun, readThisRun, writtenToday: writtenTodayBefore + writtenThisRun })
 
-/** Fail before writing if `estimatedRows` would push today's total past the guard. */
+/** Today's write budget is used up: not a failure, the work resumes on the next day's run. */
+export class WriteBudgetError extends Error {}
+
+/** Stop before writing if `estimatedRows` would push today's total past the guard. */
 export function assertWriteBudget(estimatedRows: number) {
   const projected = writtenTodayBefore + writtenThisRun + estimatedRows
   if (projected > guard) {
-    throw new Error(`D1 write guard: ${projected} rows today would exceed ${guard}`)
+    throw new WriteBudgetError(`D1 write guard: ${projected} rows today would exceed ${guard}`)
   }
 }
 

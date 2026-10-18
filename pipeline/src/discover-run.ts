@@ -3,7 +3,7 @@
 //   1. MCP servers from the official MCP Registry (first import resumable across days, then incremental)
 //   2. Resolve each tool's GitHub repo; repos with >= TOOL_REPO_MIN_STARS join star tracking
 //   3. Weekly npm / PyPI downloads, one seventh of the packages per day
-import { d1Usage, initWriteBudget, kvGet, kvPut, writeBudgetLeft } from './cf.ts'
+import { d1Usage, initWriteBudget, kvGet, kvPut, writeBudgetLeft, WriteBudgetError } from './cf.ts'
 import { D1_DISCOVER_WRITE_GUARD, DISCOVER_RESERVE_WRITES, TREE_SCANS_PER_RUN, GITHUB_CONCURRENCY, TOOL_REPO_LOOKUPS_PER_DAY, TOOL_REPO_MIN_STARS, TOOL_REPO_RECHECK_DAYS } from './config.ts'
 import { loadRules, makeCategoriser, stripFormatWords } from './categorise.ts'
 import { fetchWeeklyDownloads, weekOf } from './downloads.ts'
@@ -264,13 +264,25 @@ async function main() {
   log('discover state', { mcp: state.mcp, d1WrittenToday: state.d1.written })
 
   classifier = await step('classifier', () => loadClassifier(`${CACHE_DIR}/hf`))
+  // Each step stops cleanly when today's write budget runs out; the rest resumes on the next run.
+  const steps: [string, () => Promise<unknown>][] = [
+    ['mcp-registry', () => importMcp(state, categorise, now)],
+    ['resolve-repos', () => resolveRepos(categorise, now)],
+    ['agents', () => discoverAgents(categorise, now)],
+    ['skills', () => discoverSkills(state, categorise, now)],
+    ['downloads', () => refreshDownloads(now)],
+    ['reclassify', () => reclassify(categorise)],
+  ]
   try {
-    await step('mcp-registry', () => importMcp(state, categorise, now))
-    await step('resolve-repos', () => resolveRepos(categorise, now))
-    await step('agents', () => discoverAgents(categorise, now))
-    await step('skills', () => discoverSkills(state, categorise, now))
-    await step('downloads', () => refreshDownloads(now))
-    await step('reclassify', () => reclassify(categorise))
+    for (const [name, fn] of steps) {
+      try {
+        await step(name, fn)
+      } catch (e) {
+        if (!(e instanceof WriteBudgetError)) throw e
+        console.log(`::notice::${name}: today's database write budget is used up; the remaining steps continue on the next run`)
+        break
+      }
+    }
   } finally {
     // Save progress even after a failure, so a partial first import resumes instead of restarting.
     state.d1 = { day: today, written: d1Usage().writtenToday }
@@ -281,5 +293,7 @@ async function main() {
 
 main().catch((e) => {
   console.error(e)
+  // Annotations are public (readable without signing in), unlike the log.
+  console.log(`::error::${String(e instanceof Error ? e.message : e).replace(/\s+/g, ' ').slice(0, 900)}`)
   process.exit(1)
 })

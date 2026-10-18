@@ -4,6 +4,9 @@ on:
   schedule:
     # Minute 17, not 0: GitHub delays or drops many top-of-the-hour scheduled runs.
     - cron: '17 */4 * * *'
+    # Backup 90 minutes later: GitHub drops some scheduled runs (it skipped 08:17 on 2026-10-18).
+    # It runs only when the live site is older than 3 hours, so normally it ends in seconds.
+    - cron: '47 1-23/4 * * *'
   workflow_dispatch:
   workflow_call:
 
@@ -12,9 +15,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  gate:
+    if: github.repository == 'IOANNISMICHAEL/gitofanton'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        run: |
+          if [ "${{ github.event.schedule }}" != "47 1-23/4 * * *" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          at=$(curl -fsS "https://gitofanton.com/data/meta.json?gate=${{ github.run_id }}" | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>console.log(JSON.parse(s).generatedAt))' || echo 1970-01-01T00:00:00Z)
+          age=$(( $(date +%s) - $(date -d "$at" +%s) ))
+          echo "live data is $((age / 60)) minutes old"
+          if [ "$age" -gt 10800 ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; fi
+
   pipeline:
     # Runs only in the public copy (unlimited free minutes); see mirror.yml in the private repo.
-    if: github.repository == 'IOANNISMICHAEL/gitofanton'
+    needs: gate
+    if: github.repository == 'IOANNISMICHAEL/gitofanton' && needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write # keep-alive commit below
