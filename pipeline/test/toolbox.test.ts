@@ -94,11 +94,12 @@ test('radar: one entry per repo, shown as its most specific tool type', async ()
   assert.deepEqual(e.map((x) => [x.n, x.ty, x.q, x.c]), [['o/r101', 'repo', 0, 'ai'], ['Helper', 'agent', 3, 'gamedev']])
 })
 
-test('radar: 50 items, at most 20 per quadrant, rings 5/10/15/20 by stars', async () => {
+test('radar: 50 items, 20 per quadrant first, rings 5/10/15/20 by stars', async () => {
   const { buildRadar } = await import('../src/radar.ts')
   const mk = (i: number, q: number) => ({ n: `x${i}`, ty: 'repo' as const, q, c: 'ai', s: 1000 + i * 100, g: 10 + i, u: '', a: null })
   const r = buildRadar([...Array.from({ length: 40 }, (_, i) => mk(i, 0)), ...Array.from({ length: 40 }, (_, i) => mk(100 + i, 2))])
-  assert.equal(r.items.length, 40) // 20 repos + 20 MCP: the cap leaves the rest out
+  assert.equal(r.items.length, 50) // 20 + 20 under the cap, then the next 10 best of any type
+  assert.ok(r.items.filter((i) => i.q === 2).length >= 20)
   const big = buildRadar([0, 1, 2, 3].flatMap((q) => Array.from({ length: 20 }, (_, i) => mk(q * 100 + i, q))))
   assert.deepEqual([0, 1, 2, 3].map((ring) => big.items.filter((i) => i.ring === ring).length), [5, 10, 15, 20])
   assert.ok(big.items.filter((i) => i.ring === 0).every((i) => i.s >= big.rings[1].max))

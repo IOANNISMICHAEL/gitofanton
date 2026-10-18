@@ -8,7 +8,7 @@ import { isListed, link, publisherCounts } from './toolbox.ts'
 import type { ToolRead } from './tools.ts'
 import { log } from './util.ts'
 
-/** No quadrant takes more than this, so one busy type can't hide the others. */
+/** No quadrant takes more than this while other types have items to show. */
 export const QUADRANT_CAP = 20
 
 export type RadarEntry = {
@@ -73,15 +73,21 @@ export function radarEntries(repos: Scored[], tools: ToolRead[], downloads: Map<
   return out
 }
 
-/** Top RADAR_SIZE by 7-day momentum (at most QUADRANT_CAP per quadrant), ringed by total-stars rank. */
+/** Top RADAR_SIZE by 7-day momentum (QUADRANT_CAP per quadrant first, then any), ringed by total-stars rank. */
 export function buildRadar(entries: RadarEntry[]) {
   const perQ = [0, 0, 0, 0]
+  const ranked = [...entries].sort((a, b) => score(b.g, b.s) - score(a.g, a.s))
   const picked: RadarEntry[] = []
-  for (const e of [...entries].sort((a, b) => score(b.g, b.s) - score(a.g, a.s))) {
+  for (const e of ranked) {
     if (picked.length >= RADAR_SIZE) break
     if (perQ[e.q] >= QUADRANT_CAP) continue
     perQ[e.q]++
     picked.push(e)
+  }
+  // Types with too few growing items leave room: fill it with the next best of any type.
+  for (const e of ranked) {
+    if (picked.length >= RADAR_SIZE) break
+    if (!picked.includes(e)) picked.push(e)
   }
   picked.sort((a, b) => b.s - a.s)
   const rings: { label: string; min: number; max: number }[] = []
