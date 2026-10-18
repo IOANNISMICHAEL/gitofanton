@@ -57,7 +57,9 @@ export function SearchDialog({ compact = false, shortcuts = !compact }: { compac
       setActive((a) => Math.max(a - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (rows[active]) window.open(rows[active][4], "_blank", "noopener");
+      const url = rows[active]?.[4];
+      if (url?.startsWith("/")) location.href = url;
+      else if (url) window.open(url, "_blank", "noopener");
       else if (q.trim()) location.href = `/search/?q=${encodeURIComponent(q.trim())}`;
     }
   };

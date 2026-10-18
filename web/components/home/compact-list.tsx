@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Download, Star } from "lucide-react";
-import { TYPE_LABEL, categoryLabel, formatStars, type Item } from "@/lib/data";
+import { TYPE_LABEL, categoryLabel, formatStars, linkProps, type Item } from "@/lib/data";
 import { NeonCard } from "@/components/fx/neon-card";
 
 /** A short ranked list for front-page and category panels. */
@@ -36,7 +36,7 @@ export function CompactList({
         <ol className="list-none divide-y divide-border">
           {items.map((it, i) => {
             const isTool = it.ty !== "repo";
-            const url = isTool ? (it.u ?? (it.rp ? `https://github.com/${it.rp}` : null)) : `https://github.com/${it.n}`;
+            const url = it.ip ?? (isTool ? (it.u ?? (it.rp ? `https://github.com/${it.rp}` : null)) : `https://github.com/${it.n}`);
             return (
               <li key={it.id} className="relative flex items-center gap-3 py-2.5">
                 <span className="w-6 shrink-0 text-right font-mono text-sm text-muted-foreground tabular-nums">{String(i + 1).padStart(2, "0")}</span>
@@ -48,7 +48,7 @@ export function CompactList({
                 )}
                 <div className="min-w-0 flex-1">
                   {url ? (
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="block truncate text-base text-foreground hover:underline after:absolute after:inset-0 after:content-['']">
+                    <a {...linkProps(url)} className="block truncate text-base text-foreground hover:underline after:absolute after:inset-0 after:content-['']">
                       {it.n}
                     </a>
                   ) : (

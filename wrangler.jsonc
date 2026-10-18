@@ -9,7 +9,7 @@
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
     // Only these paths invoke the Worker; everything else is a free static-asset hit.
-    "run_worker_first": ["/api/*", "/repo/*"]
+    "run_worker_first": ["/api/*"]
   },
   "routes": [
     { "pattern": "gitofanton.com", "custom_domain": true }

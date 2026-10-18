@@ -9,6 +9,7 @@ import { isEligible, type Scored } from './score.ts'
 import { isListed, link, publisherCounts } from './toolbox.ts'
 import type { ToolRead } from './tools.ts'
 import { log } from './util.ts'
+import { href, type ItemPaths } from './items.ts'
 
 export const SEARCH_SIZE = 50_000
 
@@ -25,19 +26,19 @@ export function words(name: string): string[] {
   return [...out]
 }
 
-export function searchRows(repos: Scored[], tools: ToolRead[], downloads: Map<number, number>): SearchRow[] {
+export function searchRows(repos: Scored[], tools: ToolRead[], downloads: Map<number, number>, paths?: ItemPaths): SearchRow[] {
   const byId = new Map(repos.map((r) => [r.id, r]))
   const publishers = publisherCounts(tools)
   const rows: { row: SearchRow; rank: number }[] = []
   for (const r of repos) {
     if (!isEligible(r)) continue
-    rows.push({ row: [r.fullName, 'repo', r.stars, r.category, `https://github.com/${r.fullName}`, null], rank: r.stars })
+    rows.push({ row: [r.fullName, 'repo', r.stars, r.category, href(paths?.repo(r.id)) ?? `https://github.com/${r.fullName}`, null], rank: r.stars })
   }
   for (const t of tools) {
     const repo = t.repo_id ? byId.get(t.repo_id) : undefined
     const dl = downloads.get(t.id)
     if (!isListed(t, repo, dl, publishers) || repo?.flag) continue
-    const url = link(t, repo?.fullName ?? null)
+    const url = href(paths?.tool(t.id)) ?? link(t, repo?.fullName ?? null)
     if (!url) continue
     const name = t.title || t.name.split('/').pop() || t.name
     // Tools without a repo rank by downloads (a weekly download counts like a star).
@@ -86,8 +87,8 @@ export function buildShards(rows: SearchRow[]) {
   return { files, split: split.sort() }
 }
 
-export function writeSearch(outDir: string, repos: Scored[], tools: ToolRead[], downloads: Map<number, number>) {
-  const rows = searchRows(repos, tools, downloads)
+export function writeSearch(outDir: string, repos: Scored[], tools: ToolRead[], downloads: Map<number, number>, paths?: ItemPaths) {
+  const rows = searchRows(repos, tools, downloads, paths)
   const { files, split } = buildShards(rows)
   const dir = join(outDir, 'data', 'search')
   rmSync(dir, { recursive: true, force: true })

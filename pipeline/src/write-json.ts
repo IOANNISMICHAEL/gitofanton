@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path'
 import { CATEGORIES, FORMULA_VERSION, OUT_FILE_LIMIT, VIEW_SIZE } from './config.ts'
 import { LISTS, LIST_WINDOWS, gainWindow, isEligible, isNew, rank, trending, type ListName, type Scored, type Window } from './score.ts'
 import { log } from './util.ts'
+import { href, type ItemPaths } from './items.ts'
 
 export type Item = {
   id: number
@@ -23,13 +24,14 @@ export type Item = {
   p: string | null // last push, YYYY-MM-DD
   new?: 1
   f?: string // flag reason
+  ip?: string // item page URL, when the repo has one
 }
 
 export type View = { list: ListName; window: Window | null; category: string; lang: string | null; total: number; items: Item[] }
 
 const day = (iso: string | null) => (iso ? iso.slice(0, 10) : null)
 
-const toItem = (r: Scored, w: Window, now: Date): Item => ({
+const toItem = (r: Scored, w: Window, now: Date, ip?: string): Item => ({
   id: r.id,
   ty: 'repo',
   n: r.fullName,
@@ -45,6 +47,7 @@ const toItem = (r: Scored, w: Window, now: Date): Item => ({
   p: day(r.pushedAt),
   ...(isNew(r, now) ? { new: 1 as const } : {}),
   ...(r.flag ? { f: r.flag } : {}),
+  ...(ip ? { ip } : {}),
 })
 
 /** Language URL slug; must match web/lib/data.ts. */
@@ -54,7 +57,8 @@ const LANGUAGES = (
   JSON.parse(readFileSync(new URL('../../config/languages.json', import.meta.url), 'utf8')) as { languages: string[] }
 ).languages
 
-export function writeAll(outDir: string, repos: Scored[], now: Date, meta: Record<string, unknown>) {
+export function writeAll(outDir: string, repos: Scored[], now: Date, meta: Record<string, unknown>, paths?: ItemPaths) {
+  const ip = (id: number) => href(paths?.repo(id))
   const dataDir = join(outDir, 'data')
   rmSync(dataDir, { recursive: true, force: true })
   const generatedAt = now.toISOString()
@@ -68,7 +72,7 @@ export function writeAll(outDir: string, repos: Scored[], now: Date, meta: Recor
   // No timestamp in view files: an unchanged view keeps the same bytes and isn't re-uploaded.
   const writeView = (rel: string, v: Omit<View, 'items' | 'total'>, ranked: Scored[]) => {
     const gw = gainWindow(v.list, v.window)
-    write(rel, { ...v, total: ranked.length, items: ranked.slice(0, VIEW_SIZE).map((r) => toItem(r, gw, now)) } satisfies View)
+    write(rel, { ...v, total: ranked.length, items: ranked.slice(0, VIEW_SIZE).map((r) => toItem(r, gw, now, ip(r.id))) } satisfies View)
   }
 
   const counts: Record<string, number> = {}
@@ -95,7 +99,7 @@ export function writeAll(outDir: string, repos: Scored[], now: Date, meta: Recor
 
   // Flagged repos leave every list and radar; the site shows them only behind "Show flagged".
   const flagged = repos.filter((r) => r.flag && isEligible(r, true)).sort((a, b) => b.gain.week - a.gain.week)
-  write('flagged.json', { total: flagged.length, items: flagged.slice(0, VIEW_SIZE).map((r) => toItem(r, 'week', now)) })
+  write('flagged.json', { total: flagged.length, items: flagged.slice(0, VIEW_SIZE).map((r) => toItem(r, 'week', now, ip(r.id))) })
   counts.flagged = flagged.length
 
   // Front page: total stars gained today, and the topics most common among this week's trending repos.

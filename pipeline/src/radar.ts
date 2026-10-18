@@ -7,6 +7,7 @@ import { isEligible, score, type Scored } from './score.ts'
 import { isListed, link, publisherCounts } from './toolbox.ts'
 import type { ToolRead } from './tools.ts'
 import { log } from './util.ts'
+import { href, type ItemPaths } from './items.ts'
 
 /** No quadrant takes more than this while other types have items to show. */
 export const QUADRANT_CAP = 20
@@ -34,7 +35,7 @@ export function compactStars(n: number) {
 }
 
 /** One entry per growing repo: as a plain repo, or as the toolbox item(s) it hosts. */
-export function radarEntries(repos: Scored[], tools: ToolRead[], downloads: Map<number, number>): RadarEntry[] {
+export function radarEntries(repos: Scored[], tools: ToolRead[], downloads: Map<number, number>, paths?: ItemPaths): RadarEntry[] {
   const byId = new Map(repos.map((r) => [r.id, r]))
   const publishers = publisherCounts(tools)
   const hosted = new Map<number, ToolRead[]>()
@@ -49,7 +50,7 @@ export function radarEntries(repos: Scored[], tools: ToolRead[], downloads: Map<
     if (!isEligible(r) || r.gain.week <= 0) continue
     const ts = hosted.get(r.id)
     if (!ts) {
-      out.push({ n: r.fullName, ty: 'repo', q: 0, c: r.category, s: r.stars, g: r.gain.week, u: `https://github.com/${r.fullName}`, a: r.avatarUrl })
+      out.push({ n: r.fullName, ty: 'repo', q: 0, c: r.category, s: r.stars, g: r.gain.week, u: href(paths?.repo(r.id)) ?? `https://github.com/${r.fullName}`, a: r.avatarUrl })
       continue
     }
     const best = ts.reduce((a, b) => (TYPE_RANK[b.type] > TYPE_RANK[a.type] ? b : a))
@@ -66,7 +67,7 @@ export function radarEntries(repos: Scored[], tools: ToolRead[], downloads: Map<
       c,
       s: r.stars,
       g: r.gain.week,
-      u: (one ? link(best, r.fullName) : null) ?? `https://github.com/${r.fullName}`,
+      u: (one ? (href(paths?.tool(best.id)) ?? link(best, r.fullName)) : href(paths?.repo(r.id))) ?? `https://github.com/${r.fullName}`,
       a: r.avatarUrl,
     })
   }
@@ -105,8 +106,8 @@ export function buildRadar(entries: RadarEntry[]) {
   return { quadrants: QUADRANTS, rings, items }
 }
 
-export function writeRadars(outDir: string, repos: Scored[], tools: ToolRead[], downloads: Map<number, number>) {
-  const entries = radarEntries(repos, tools, downloads)
+export function writeRadars(outDir: string, repos: Scored[], tools: ToolRead[], downloads: Map<number, number>, paths?: ItemPaths) {
+  const entries = radarEntries(repos, tools, downloads, paths)
   const sizes: Record<string, number> = {}
   for (const c of CATEGORIES) {
     if (c === 'other') continue

@@ -6,6 +6,7 @@ import { CATEGORIES, VIEW_SIZE } from './config.ts'
 import { score, type Scored } from './score.ts'
 import type { ToolRead } from './tools.ts'
 import { log } from './util.ts'
+import { href, type ItemPaths } from './items.ts'
 
 export const TOOLBOX_LISTS = ['skills', 'mcp', 'agents'] as const
 export type ToolboxList = (typeof TOOLBOX_LISTS)[number]
@@ -37,6 +38,7 @@ export type ToolItem = {
   rm?: 1 // MCP: hosted endpoint
   new?: 1
   f?: string
+  ip?: string // item page URL
 }
 
 /** Every MCP namespace with its server count, for the bulk-publisher gate. */
@@ -98,7 +100,7 @@ export function rankTools(items: Entry[], sort: ToolSort) {
   })
 }
 
-export function writeToolbox(outDir: string, tools: ToolRead[], downloads: Map<number, number>, repos: Map<number, Scored>, now: Date) {
+export function writeToolbox(outDir: string, tools: ToolRead[], downloads: Map<number, number>, repos: Map<number, Scored>, now: Date, paths?: ItemPaths) {
   const publishers = publisherCounts(tools)
   const counts: Record<string, number> = {}
   let files = 0
@@ -124,6 +126,7 @@ export function writeToolbox(outDir: string, tools: ToolRead[], downloads: Map<n
       ...(x.t.remote ? { rm: 1 as const } : {}),
       ...(now.getTime() - Date.parse(x.t.first_seen) <= 7 * 86_400_000 ? { new: 1 as const } : {}),
       ...(r?.flag ? { f: r.flag } : {}),
+      ...(paths?.tool(x.t.id) ? { ip: href(paths.tool(x.t.id)) } : {}),
     }
   }
   const write = (rel: string, body: unknown) => {

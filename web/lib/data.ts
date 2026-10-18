@@ -28,7 +28,12 @@ export type Item = {
   p: string | null; // last push YYYY-MM-DD
   new?: 1;
   f?: string;
+  ip?: string; // our item page, when the item has one
 };
+
+/** Props for a link that opens our own page in place and anything else in a new tab. */
+export const linkProps = (url: string) =>
+  url.startsWith("/") ? { href: url } : { href: url, target: "_blank", rel: "noopener noreferrer" };
 
 export type View = { list: ListId; window: WindowId | null; category: string; lang: string | null; total: number; items: Item[] };
 

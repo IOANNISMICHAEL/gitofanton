@@ -14,11 +14,6 @@ export default {
       return json({ error: 'not_found' }, 404)
     }
 
-    if (url.pathname.startsWith('/repo/')) {
-      // M5 replaces this with shard lookup + HTMLRewriter meta injection.
-      return env.ASSETS.fetch(request)
-    }
-
     return env.ASSETS.fetch(request)
   },
 } satisfies ExportedHandler<Env>

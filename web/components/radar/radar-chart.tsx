@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TYPE_LABEL, formatStars, type Radar, type RadarItem } from "@/lib/data";
+import { TYPE_LABEL, formatStars, linkProps, type Radar, type RadarItem } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 const SIZE = 800;
@@ -82,9 +82,7 @@ export function RadarChart({ radar, className }: { radar: Radar; className?: str
           {placed.map((p) => (
             <a
               key={`${p.q}-${p.n}`}
-              href={p.u}
-              target="_blank"
-              rel="noopener"
+              {...linkProps(p.u)}
               onMouseEnter={() => setActive(p)}
               onMouseLeave={() => setActive((a) => (a === p ? null : a))}
               onFocus={() => setActive(p)}
@@ -128,7 +126,7 @@ export function RadarChart({ radar, className }: { radar: Radar; className?: str
                   {rows.map((r) => (
                     <tr key={r.n} className="border-b border-border">
                       <td className="py-2 pr-2">
-                        <a href={r.u} target="_blank" rel="noopener" className="text-foreground hover:underline">
+                        <a {...linkProps(r.u)} className="text-foreground hover:underline">
                           {r.n}
                         </a>
                       </td>

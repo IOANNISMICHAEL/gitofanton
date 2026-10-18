@@ -1,5 +1,5 @@
 import { Clock, Download, Globe, Star, TriangleAlert } from "lucide-react";
-import { TYPE_LABEL, categoryLabel, formatStars, languageColor, type Item } from "@/lib/data";
+import { TYPE_LABEL, categoryLabel, formatStars, languageColor, linkProps, type Item } from "@/lib/data";
 
 const STALE_DAYS = 90;
 
@@ -8,7 +8,7 @@ export function RepoCard({ item, rank, gainLabel, asOf }: { item: Item; rank: nu
   const isTool = item.ty !== "repo";
   const [owner, name] = isTool ? [null, item.n] : item.n.split("/");
   const stale = !!item.p && Date.parse(asOf) - Date.parse(item.p) > STALE_DAYS * 86_400_000;
-  const url = isTool ? (item.u ?? (item.rp ? `https://github.com/${item.rp}` : null)) : `https://github.com/${item.n}`;
+  const url = item.ip ?? (isTool ? (item.u ?? (item.rp ? `https://github.com/${item.rp}` : null)) : `https://github.com/${item.n}`);
 
   return (
     <article className="group relative -mx-3 flex gap-4 rounded-lg border-b border-border px-3 py-5 transition-[background-color,box-shadow] duration-300 hover:bg-card hover:shadow-[var(--glow-strong)]">
@@ -26,7 +26,7 @@ export function RepoCard({ item, rank, gainLabel, asOf }: { item: Item; rank: nu
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <h3 className="min-w-0 text-lg leading-snug">
             {url ? (
-              <a href={url} target="_blank" rel="noopener noreferrer" className="break-words hover:underline after:absolute after:inset-0 after:content-['']">
+              <a {...linkProps(url)} className="break-words hover:underline after:absolute after:inset-0 after:content-['']">
                 {owner ? <span className="text-muted-foreground">{owner}/</span> : null}
                 <span className="font-medium text-foreground">{name}</span>
               </a>

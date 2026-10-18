@@ -38,7 +38,7 @@ jobs:
     permissions:
       contents: write # keep-alive commit below
       issues: write # data warnings (keep-good step) reach the owner as a GitHub issue email
-    timeout-minutes: 20
+    timeout-minutes: 30 # pipeline ~8 min + build with 10,000 item pages
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -104,6 +104,13 @@ jobs:
         with:
           path: web/.next/cache
           key: next-${{ github.run_id }}
+      # A2: static export writes ~10 files per page (index.html + client-navigation payloads). Item
+      # pages are only reached by full page loads (plain <a> links), so keep just their index.html.
+      - name: Drop item-page navigation payloads
+        run: |
+          for d in repo skill mcp agent plugin; do [ -d "web/out/$d" ] && find "web/out/$d" -type f ! -name 'index.html' -delete; done
+          echo "item pages: $(find web/out/repo web/out/skill web/out/mcp web/out/agent web/out/plugin -name index.html 2>/dev/null | wc -l)"
+
       - name: File-count guard
         run: node pipeline/src/check-out.ts web/out
 

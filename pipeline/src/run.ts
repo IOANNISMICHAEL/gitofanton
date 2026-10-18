@@ -18,7 +18,9 @@ import { writeAll } from './write-json.ts'
 import { latestDownloads, readToolsCached, toolboxCounts } from './tools.ts'
 import { writeToolbox } from './toolbox.ts'
 import { writeRadars } from './radar.ts'
+import { dirname } from 'node:path'
 import { writeSearch } from './search.ts'
+import { selectPages, writePages, type ItemPaths } from './items.ts'
 import { BURST_MIN_DAY_GAIN, STARGAZER_PAGES_FOR_BURST, coordinated, judge, loadBlocklist, makeBlocker, pickCandidates, youngIds } from './trust.ts'
 import { rank } from './score.ts'
 
@@ -246,21 +248,24 @@ async function main() {
   // 7. Trust: check the most visible repos for fake stars (PLAN v2 §7).
   await step('trust', () => runTrust(state, scored, overrides, now, nowHour))
 
-  // 8. JSON.
+  // 8. Item pages first (lists, radars and search link to them), then the JSON.
+  const [tools, downloads] = await step('read-tools', () => Promise.all([readToolsCached(CACHE_DIR), latestDownloads()]))
+  const pages = selectPages(scored, new Map(rows.map((r) => [r.id, r])), tools, downloads)
+  const paths: ItemPaths = { repo: (id) => pages.repoPath.get(id), tool: (id) => pages.toolPath.get(id) }
   const out = await step('write-json', async () => writeAll(OUT_DIR, scored, now, {
     trackedRepos: Object.keys(state.repos).length,
     toolbox: await toolboxCounts(),
     historyDays: win.historyDays,
     historyAsOf: win.asOf,
-  }))
+  }, paths))
 
-  // 8b. Toolbox lists (skills, MCP servers, agents & plugins).
+  // 8b. Toolbox lists (skills, MCP servers, agents & plugins), radars, search, item page data.
   await step('toolbox', async () => {
-    const [tools, downloads] = await Promise.all([readToolsCached(CACHE_DIR), latestDownloads()])
-    writeToolbox(OUT_DIR, tools, downloads, new Map(scored.map((s) => [s.id, s])), now)
-    writeRadars(OUT_DIR, scored, tools, downloads)
-    writeSearch(OUT_DIR, scored, tools, downloads)
+    writeToolbox(OUT_DIR, tools, downloads, new Map(scored.map((s) => [s.id, s])), now, paths)
+    writeRadars(OUT_DIR, scored, tools, downloads, paths)
+    writeSearch(OUT_DIR, scored, tools, downloads, paths)
   })
+  await step('item-pages', () => writePages(dirname(OUT_DIR), pages, now))
 
   // 9. Persist state (one KV write).
   state.d1 = { day: today, written: d1Usage().writtenToday }

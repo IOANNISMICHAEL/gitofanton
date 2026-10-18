@@ -11,3 +11,4 @@ next-env.d.ts
 .pnpm-store/
 .cache/
 web/public/data/
+web/.item-data/

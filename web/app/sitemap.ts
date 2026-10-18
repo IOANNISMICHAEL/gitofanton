@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { CATEGORIES, LANGUAGES, LISTS, SITE_URL, isToolList, toolHref, toolSortsFor, viewHref, type ListId } from "@/lib/data";
 import { readMeta } from "@/lib/server-data";
+import { allPages } from "@/lib/items";
 
 export const dynamic = "force-static";
 
@@ -22,6 +23,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       if (LISTS[list].hasLanguages && w) for (const l of LANGUAGES) urls.add(viewHref(list, w, "all", l.slug));
     }
   }
+  for (const p of allPages()) urls.add(`/${p.p}/`);
   return [...urls].map((path) => ({
     url: `${SITE_URL}${path}`,
     lastModified,

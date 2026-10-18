@@ -104,3 +104,21 @@ test('radar: 50 items, 20 per quadrant first, rings 5/10/15/20 by stars', async 
   assert.deepEqual([0, 1, 2, 3].map((ring) => big.items.filter((i) => i.ring === ring).length), [5, 10, 15, 20])
   assert.ok(big.items.filter((i) => i.ring === 0).every((i) => i.s >= big.rings[1].max))
 })
+
+test('item pages: safe unique URLs, best of stars rank and momentum rank', async () => {
+  const { basePath, seg, selectPages } = await import('../src/items.ts')
+  assert.equal(seg('..Hidden Dir'), 'hidden-dir')
+  assert.equal(basePath('repo', 'Owner/My.Repo', null), 'repo/owner/my.repo')
+  assert.equal(basePath('mcp', 'io.github.Foo/Bar Server', null), 'mcp/io.github.foo/bar-server')
+  assert.equal(basePath('skill', 'PDF Tools', 'o/r'), 'skill/o/r/pdf-tools')
+  const big = repo(201, 90_000, 10)
+  const fast = repo(202, 300, 200)
+  const quiet = repo(203, 5_000, 0)
+  const twins = [tool({ type: 'skill', repo_id: 202, title: 'Same' }), tool({ type: 'skill', repo_id: 202, title: 'Same' })]
+  const sel = selectPages([big, fast, quiet], new Map(), twins, new Map())
+  const skillPaths = sel.picked.filter((x) => x.c.kind === 'skill').map((x) => x.p).sort()
+  assert.deepEqual(skillPaths, ['skill/o/r202/same', 'skill/o/r202/same-2'])
+  const two = selectPages([big, fast, quiet], new Map(), [], new Map(), 2)
+  assert.deepEqual(two.picked.map((x) => x.p).sort(), ['repo/o/r201', 'repo/o/r202']) // #1 by stars, #1 by momentum
+  assert.equal(two.repoPath.get(203), undefined)
+})

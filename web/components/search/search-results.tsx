@@ -1,5 +1,5 @@
 import { Star } from "lucide-react";
-import { TYPE_LABEL, categoryLabel, formatStars } from "@/lib/data";
+import { TYPE_LABEL, categoryLabel, formatStars, linkProps } from "@/lib/data";
 import type { SearchRow } from "@/lib/search";
 import { cn } from "@/lib/utils";
 
@@ -9,9 +9,7 @@ export function SearchResults({ rows, active, onHover }: { rows: SearchRow[]; ac
       {rows.map((r, i) => (
         <li key={`${r[1]}-${r[4]}`} role="option" aria-selected={i === active}>
           <a
-            href={r[4]}
-            target="_blank"
-            rel="noopener"
+            {...linkProps(r[4])}
             onMouseEnter={() => onHover?.(i)}
             className={cn("flex items-center gap-3 px-4 py-3 transition-colors", i === active ? "bg-foreground/10" : "hover:bg-foreground/5")}
           >
