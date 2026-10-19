@@ -74,9 +74,9 @@ export default async function CategoryPage({ params }: { params: Params }) {
           <CompactList title="New & rising" href={rising.href} items={rising.items} gainLabel="this week" showCategory={false} />
         </div>
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
-          <CompactList title="Skills" href={skills.href} items={skills.items} gainLabel="this week" showCategory={false} empty="No skills in this category yet." />
-          <CompactList title="MCP servers" href={mcp.href} items={mcp.items} gainLabel="this week" showCategory={false} empty="No MCP servers in this category yet." />
-          <CompactList title="Agents & plugins" href={agents.href} items={agents.items} gainLabel="this week" showCategory={false} empty="No agents or plugins in this category yet." />
+          <CompactList title="Skills" href={skills.href} items={skills.items} gainLabel="this week" showCategory={false} />
+          <CompactList title="MCP servers" href={mcp.href} items={mcp.items} gainLabel="this week" showCategory={false} />
+          <CompactList title="Agents & plugins" href={agents.href} items={agents.items} gainLabel="this week" showCategory={false} />
         </div>
       </div>
     </SiteShell>

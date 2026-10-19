@@ -44,6 +44,7 @@ export default function ToolboxPage() {
         {SECTIONS.map(({ list, key }) => {
           const L = LISTS[list];
           const view = readToolView(list);
+          if (view.items.length === 0) return null;
           const count = key === "agent" ? (meta?.toolbox?.byType.agent?.total ?? 0) + (meta?.toolbox?.byType.plugin?.total ?? 0) : meta?.toolbox?.byType[key]?.total;
           return (
             <section key={list} className="mb-14" aria-labelledby={`h-${list}`}>
@@ -56,9 +57,7 @@ export default function ToolboxPage() {
                 </Link>
               </div>
               <p className="mb-2 text-sm text-muted-foreground">{L.blurb}</p>
-              {view.items.length === 0 ? (
-                <p className="py-8 text-sm text-muted-foreground">Being collected: the first items appear after the next discovery run (twice a day).</p>
-              ) : (
+              {(
                 <ol className="list-none">
                   {view.items.slice(0, 6).map((item, i) => (
                     <li key={item.id}>

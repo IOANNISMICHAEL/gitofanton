@@ -77,8 +77,7 @@ export function ItemPage({ kind, path }: { kind: PageKind; path: string[] }) {
     return (
       <SiteShell>
         <div className="mx-auto max-w-[800px] px-4 pb-20 pt-28">
-          <h1 className="font-display text-5xl text-foreground">Not here yet</h1>
-          <p className="mt-3 text-muted-foreground">Item pages are built from the latest data run.</p>
+          <h1 className="font-display text-5xl text-foreground">Page not found</h1>
         </div>
       </SiteShell>
     );

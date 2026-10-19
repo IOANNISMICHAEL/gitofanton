@@ -169,9 +169,7 @@ export function ListClient({
 
       {shown.length === 0 ? (
         <p className="py-16 text-center text-muted-foreground">
-          {isToolList(list)
-            ? "Being collected: the first items appear after the next discovery run (twice a day)."
-            : "Nothing matches yet. Star history started on 17 October 2026, so weekly and monthly lists fill in over the coming days."}
+          No projects in this view.
         </p>
       ) : (
         <ol className="list-none">

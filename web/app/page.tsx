@@ -110,9 +110,9 @@ export default function Home() {
             <Link href="/toolbox/" className="text-sm text-muted-foreground hover:text-foreground">Open the toolbox</Link>
           </div>
           <div className="grid gap-4 lg:grid-cols-3">
-            <CompactList title="Skills" href="/toolbox/skills/" items={skills.items} gainLabel="this week" showCategory={false} empty="Being collected: the first skills appear after the next discovery run." />
+            <CompactList title="Skills" href="/toolbox/skills/" items={skills.items} gainLabel="this week" showCategory={false} />
             <CompactList title="MCP servers" href="/toolbox/mcp/" items={mcp.items} gainLabel="this week" showCategory={false} />
-            <CompactList title="Agents & plugins" href="/toolbox/agents/" items={agents.items} gainLabel="this week" showCategory={false} empty="Being collected: the first agents appear after the next discovery run." />
+            <CompactList title="Agents & plugins" href="/toolbox/agents/" items={agents.items} gainLabel="this week" showCategory={false} />
           </div>
         </section>
 

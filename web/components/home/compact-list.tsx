@@ -11,7 +11,6 @@ export function CompactList({
   items,
   gainLabel,
   showCategory = true,
-  empty = "Fills in as star history builds up.",
 }: {
   title: string;
   subtitle?: string;
@@ -19,8 +18,9 @@ export function CompactList({
   items: Item[];
   gainLabel: string | null;
   showCategory?: boolean;
-  empty?: string;
 }) {
+  // An empty panel is hidden, never explained.
+  if (items.length === 0) return null;
   return (
     <NeonCard as="section" className="flex flex-col p-5 sm:p-6">
       <div className="mb-1 flex items-baseline justify-between gap-3">
@@ -30,9 +30,7 @@ export function CompactList({
         </Link>
       </div>
       {subtitle ? <p className="mb-3 text-sm text-muted-foreground">{subtitle}</p> : null}
-      {items.length === 0 ? (
-        <p className="py-6 text-sm text-muted-foreground">{empty}</p>
-      ) : (
+      {(
         <ol className="list-none divide-y divide-border">
           {items.map((it, i) => {
             const isTool = it.ty !== "repo";

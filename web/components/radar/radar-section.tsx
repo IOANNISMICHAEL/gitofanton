@@ -44,7 +44,7 @@ export function RadarSection({ radar, category, picker = false, title }: { radar
       {radar && radar.items.length ? (
         <RadarChart radar={radar} className="mx-auto max-w-[760px]" />
       ) : (
-        <p className="py-16 text-center text-muted-foreground">Nothing in this radar yet: it fills in as this week&apos;s star history builds up.</p>
+        <p className="py-16 text-center text-muted-foreground">No projects in this radar.</p>
       )}
     </NeonCard>
   );
