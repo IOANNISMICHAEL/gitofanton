@@ -1,7 +1,7 @@
 // Pipeline entry point (data.yml, every 4 h). Order: GH Archive → snapshots → day rollover →
 // discovery → enrichment → score → JSON → state. Writes generatedAt to $GITHUB_OUTPUT for the deploy check.
 import { appendFileSync } from 'node:fs'
-import { d1Usage, initWriteBudget } from './cf.ts'
+import { d1Usage, initWriteBudget, D1LimitError } from './cf.ts'
 import { DAILY_MIN_STARS, ENRICH_CAP, ENRICH_STALE_DAYS, GITHUB_CONCURRENCY } from './config.ts'
 import { loadOverrides, loadRules, makeCategoriser } from './categorise.ts'
 import { runArchiveDiscovery, runSearchSeeds } from './discover.ts'
@@ -286,6 +286,12 @@ async function main() {
 }
 
 main().catch((e) => {
+  // The account's daily D1 limit: not a code failure. data.yml redeploys the last good data instead.
+  if (e instanceof D1LimitError) {
+    console.log(`::warning::${e.message}. The site keeps its last good data until the limit resets at 00:00 UTC.`)
+    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, 'limited=true\n')
+    process.exit(0)
+  }
   console.error(e)
   // Annotations are public (readable without signing in), unlike the log.
   console.log(`::error::${String(e instanceof Error ? e.message : e).replace(/\s+/g, ' ').slice(0, 900)}`)

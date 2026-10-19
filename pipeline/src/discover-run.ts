@@ -276,12 +276,17 @@ async function main() {
   ]
   try {
     for (const [name, fn] of steps) {
+      const before = d1Usage()
       try {
         await step(name, fn)
       } catch (e) {
         if (!(e instanceof WriteBudgetError)) throw e
         console.log(`::notice::${name}: ${e.message}; the remaining steps continue on the next run`)
         break
+      } finally {
+        // Per-step D1 use, public, so the heavy step is visible without the log.
+        const after = d1Usage()
+        console.log(`::notice::D1 ${name}: ${(after.readThisRun - before.readThisRun).toLocaleString('en-US')} read, ${(after.writtenThisRun - before.writtenThisRun).toLocaleString('en-US')} written`)
       }
     }
   } finally {

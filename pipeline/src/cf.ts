@@ -52,6 +52,9 @@ export const d1Usage = () => ({ writtenThisRun, readThisRun, writtenToday: writt
 /** Today's write budget is used up: not a failure, the work resumes on the next day's run. */
 export class WriteBudgetError extends Error {}
 
+/** Cloudflare refused the query: the account's free daily D1 limit is used up until 00:00 UTC. */
+export class D1LimitError extends WriteBudgetError {}
+
 /** Stop before writing if `estimatedRows` would push today's total past the guard. */
 export function assertWriteBudget(estimatedRows: number) {
   const projected = writtenTodayBefore + writtenThisRun + estimatedRows
@@ -68,6 +71,8 @@ export async function d1<T = Record<string, unknown>>(sql: string, params: unkno
     body: JSON.stringify({ sql, params }),
   })
   const body = await readJson<{ success: boolean; errors?: unknown; result?: D1Result<T>[] }>(res, 'Cloudflare D1 API')
+  // 7500: free tier daily rows read or written exceeded (resets at 00:00 UTC).
+  if (JSON.stringify(body.errors ?? '').includes('"code":7500')) throw new D1LimitError(`Cloudflare D1 daily limit reached: ${JSON.stringify(body.errors).slice(0, 200)}`)
   if (!res.ok || !body.success || !body.result?.[0]) {
     throw new Error(`D1 query failed (${res.status}): ${JSON.stringify(body.errors)}: ${sql.slice(0, 120)}`)
   }
