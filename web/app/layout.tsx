@@ -24,7 +24,7 @@ const jetbrainsMono = localFont({
 })
 
 const description =
-  'Trending GitHub repositories across every category, ranked from GitHub star activity, with Hacker News and newsletter links.'
+  'Trending GitHub repositories, agent skills, MCP servers and coding agents, ranked by real star growth and updated every 4 hours.'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://gitofanton.com'),
@@ -47,6 +47,9 @@ export const metadata: Metadata = {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
       { url: '/favicon.svg', type: 'image/svg+xml' },
+      // Google Search shows a favicon only from a square PNG/ICO/SVG at a multiple of 48 px.
+      { url: '/favicon-48.png', type: 'image/png', sizes: '48x48' },
+      { url: '/android-chrome-192.png', type: 'image/png', sizes: '192x192' },
     ],
     apple: '/apple-touch-icon.png',
     other: [{ rel: 'mask-icon', url: '/safari-pinned-tab.svg', color: '#08090C' }],
