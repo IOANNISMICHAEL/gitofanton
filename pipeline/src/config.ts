@@ -42,6 +42,14 @@ export const DISCOVER_RESERVE_WRITES = 10_000
 // D1 free tier: 5M rows read per day across all jobs. Discover runs twice a day; data runs ~6 times
 // and reads only changed rows (indexes in migrations/0004).
 export const DISCOVER_READ_CAP = 600_000
+
+// History backfill (M16): the repos on the site's lists, 30 days back, a share of each discover run.
+export const TRACKING_START = '2026-10-17' // our own daily history starts here; "since tracking" sums from it
+export const BACKFILL_REPOS = 2000
+export const BACKFILL_DAYS = 30
+export const BACKFILL_MAX_PAGES_PER_REPO = 40 // 4,000 stars; busier repos get the most recent days only
+export const BACKFILL_PAGES_PER_RUN = 800 // ~30 min of paced GraphQL inside the 2-hour discover job
+export const BACKFILL_WRITES_PER_RUN = 8000
 export const TOOL_REPO_MIN_STARS = 10 // a tool's GitHub repo joins star tracking at or above this
 export const TOOL_REPO_LOOKUPS_PER_DAY = 3000
 // Repo file-list checks per discover run. GITHUB_TOKEN allows 1,000 REST calls/hour; a GH_PAT 5,000.

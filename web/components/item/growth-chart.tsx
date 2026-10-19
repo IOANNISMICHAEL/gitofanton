@@ -34,7 +34,7 @@ export function GrowthChart({ hist, today, asOf }: { hist: [string, number][]; t
         <text x={W} y={H + 18} textAnchor="end" className="fill-muted-foreground font-mono" fontSize={12}>today</text>
         <text x={W} y={12} textAnchor="end" className="fill-muted-foreground font-mono" fontSize={12}>max +{formatStars(max)}/day</text>
       </svg>
-      <figcaption className="mt-2 text-xs text-muted-foreground">Stars gained per day. Tracking since {first}; the lighter bar is today so far.</figcaption>
+      <figcaption className="mt-2 text-xs text-muted-foreground">Stars gained per day since {first}; the lighter bar is today so far.</figcaption>
     </figure>
   );
 }

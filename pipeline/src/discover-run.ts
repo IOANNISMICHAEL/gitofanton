@@ -3,8 +3,9 @@
 //   1. MCP servers from the official MCP Registry (first import resumable across days, then incremental)
 //   2. Resolve each tool's GitHub repo; repos with >= TOOL_REPO_MIN_STARS join star tracking
 //   3. Weekly npm / PyPI downloads, one seventh of the packages per day
+import { runBackfill } from './backfill.ts'
 import { d1Usage, initWriteBudget, kvGet, kvPut, setReadCap, writeBudgetLeft, WriteBudgetError } from './cf.ts'
-import { D1_DISCOVER_WRITE_GUARD, DISCOVER_READ_CAP, DISCOVER_RESERVE_WRITES, TREE_SCANS_PER_RUN, GITHUB_CONCURRENCY, TOOL_REPO_LOOKUPS_PER_DAY, TOOL_REPO_MIN_STARS, TOOL_REPO_RECHECK_DAYS } from './config.ts'
+import { CATEGORIES, D1_DISCOVER_WRITE_GUARD, DISCOVER_READ_CAP, DISCOVER_RESERVE_WRITES, TREE_SCANS_PER_RUN, GITHUB_CONCURRENCY, TOOL_REPO_LOOKUPS_PER_DAY, TOOL_REPO_MIN_STARS, TOOL_REPO_RECHECK_DAYS } from './config.ts'
 import { loadRules, makeCategoriser, stripFormatWords } from './categorise.ts'
 import { fetchWeeklyDownloads, weekOf } from './downloads.ts'
 import { fetchMetaByNames, graphqlStats, restStats } from './github.ts'
@@ -272,6 +273,7 @@ async function main() {
     ['agents', () => discoverAgents(categorise, now)],
     ['skills', () => discoverSkills(state, categorise, now)],
     ['downloads', () => refreshDownloads(now)],
+    ['backfill', () => runBackfill(CATEGORIES.filter((c) => c !== 'other'), now)],
     ['reclassify', () => reclassify(categorise)],
   ]
   try {

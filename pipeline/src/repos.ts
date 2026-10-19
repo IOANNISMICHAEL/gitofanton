@@ -1,3 +1,4 @@
+import { TRACKING_START } from './config.ts'
 // D1 access for repos and daily_stats.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -74,9 +75,9 @@ export async function windowSums(from30: string, from7: string, lastDay: string)
             SUM(CASE WHEN day >= ?2 THEN stars ELSE 0 END) AS s7, SUM(CASE WHEN day >= ?1 THEN stars ELSE 0 END) AS s30,
             SUM(CASE WHEN day >= ?2 THEN forks ELSE 0 END) AS f7, SUM(CASE WHEN day >= ?1 THEN forks ELSE 0 END) AS f30,
             SUM(CASE WHEN day >= ?2 THEN pushes + issues ELSE 0 END) AS a7,
-            SUM(stars) AS sAll
+            SUM(CASE WHEN day >= ?4 THEN stars ELSE 0 END) AS sAll
      FROM daily_stats WHERE day <= ?3 GROUP BY repo_id`,
-    [from30, from7, lastDay],
+    [from30, from7, lastDay, TRACKING_START],
   )
   const days = await d1<{ n: number }>(`SELECT COUNT(DISTINCT day) AS n FROM daily_stats WHERE day <= ?1`, [lastDay])
   return { rows: r.results, historyDays: days.results[0]?.n ?? 0 }

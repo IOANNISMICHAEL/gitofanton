@@ -161,6 +161,17 @@ export async function fetchMetaByNames(names: string[]): Promise<(RepoMeta | nul
   })
 }
 
+/** One page (newest first) of a repo's stargazers with their star dates. */
+export async function fetchStarDates(nodeId: string, before: string | null) {
+  const data = await graphql<{ node: { stargazers: { edges: { starredAt: string }[]; pageInfo: { hasPreviousPage: boolean; startCursor: string | null } } } | null }>(
+    `query($id: ID!, $before: String) { rateLimit { cost remaining } node(id: $id) { ... on Repository {
+       stargazers(last: 100, before: $before) { edges { starredAt } pageInfo { hasPreviousPage startCursor } } } } }`,
+    { id: nodeId, before },
+  )
+  const sg = data.node?.stargazers
+  return { dates: (sg?.edges ?? []).map((e) => e.starredAt), more: !!sg?.pageInfo.hasPreviousPage, cursor: sg?.pageInfo.startCursor ?? null }
+}
+
 /** Time one 100-id batch with lighter query shapes, to learn what the star lookup actually costs. */
 export async function benchmarkSnapshotQuery(nodeIds: string[]) {
   const shapes: [string, string][] = [
