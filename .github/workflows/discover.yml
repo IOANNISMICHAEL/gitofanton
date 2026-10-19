@@ -3,11 +3,13 @@ name: discover
 # Daily: new and changed Agent toolbox items (MCP servers, later skills and agents), their GitHub
 # repos, and weekly package downloads. Writes D1 only; the 4-hourly data job publishes the results.
 on:
-  # Twice a day: GitHub sometimes drops scheduled runs, and a run that finds nothing new is cheap
-  # (each step resumes or skips what's done; the D1 write budget is per UTC day).
+  # Twice a day, with two backup times: GitHub drops some scheduled runs (02:37 on 2026-10-18, 14:37
+  # on 2026-10-19). The gate below runs a slot only when no discover run succeeded in the last 9 hours.
   schedule:
     - cron: '37 2 * * *'
+    - cron: '37 8 * * *'
     - cron: '37 14 * * *'
+    - cron: '37 20 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -15,8 +17,28 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  discover:
+  gate:
     if: github.repository == 'IOANNISMICHAEL/gitofanton'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          last=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow discover.yml --status success --limit 1 --json createdAt --jq '.[0].createdAt // "1970-01-01T00:00:00Z"')
+          age=$(( $(date +%s) - $(date -d "$last" +%s) ))
+          echo "last successful discover run: $last ($((age / 3600)) h ago)"
+          if [ "$age" -gt 32400 ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "run=false" >> "$GITHUB_OUTPUT"; fi
+
+  discover:
+    needs: gate
+    if: github.repository == 'IOANNISMICHAEL/gitofanton' && needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
