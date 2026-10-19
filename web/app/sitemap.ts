@@ -7,7 +7,7 @@ export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = readMeta()?.generatedAt ?? new Date().toISOString();
-  const urls = new Set<string>(["/", "/toolbox/", "/categories/"]);
+  const urls = new Set<string>(["/", "/toolbox/", "/categories/", "/about/"]);
   for (const c of CATEGORIES) urls.add(`/category/${c.id}/`);
   urls.add("/radar/");
   for (const c of CATEGORIES) if (c.id !== "other" && c.id !== "ai") urls.add(`/radar/${c.id}/`);

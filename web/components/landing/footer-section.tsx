@@ -12,6 +12,7 @@ const footerLinks = {
   ],
   Site: [
     { name: "Categories", href: "/categories/" },
+    { name: "About", href: "/about/" },
   ],
 };
 

@@ -12,6 +12,7 @@ const navLinks = [
   { name: "Radar",    href: "/radar/"    },
   { name: "Toolbox",  href: "/toolbox/"  },
   { name: "Categories", href: "/categories/" },
+  { name: "About",    href: "/about/"    },
 ];
 
 export function Navigation() {
