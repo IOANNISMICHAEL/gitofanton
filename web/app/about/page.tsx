@@ -39,20 +39,21 @@ function GrowthChart() {
   ].map((r) => ({ ...r, score: momentum(r.gain, r.stars) }));
   const max = Math.max(...rows.map((r) => r.score));
   return (
-    <svg viewBox="0 0 520 190" className="h-auto w-full" role="img" aria-label="Same 500 stars gained: the 800-star project scores higher than the 50,000-star one">
+    <svg viewBox="0 0 400 200" className="h-auto w-full" role="img" aria-label="Same 500 stars gained: the 800-star project scores higher than the 50,000-star one">
       {rows.map((r, i) => {
         const y = 24 + i * 82;
         const w = (r.score / max) * 300;
+        // 400-wide box: labels render at a readable size next to the bars.
         return (
           <g key={r.name}>
-            <text x={0} y={y} className="fill-foreground" fontSize={15}>{r.name}</text>
-            <text x={0} y={y + 20} className="fill-muted-foreground font-mono" fontSize={12}>{formatStars(r.stars)} stars, +{r.gain} this week</text>
-            <rect x={0} y={y + 32} width={w} height={16} rx={3} className="fill-foreground" opacity={i ? 0.95 : 0.45} />
-            <text x={w + 10} y={y + 45} className="fill-foreground font-mono" fontSize={13}>{Math.round(r.score)}</text>
+            <text x={0} y={y} className="fill-foreground" fontSize={18}>{r.name}</text>
+            <text x={0} y={y + 22} className="fill-muted-foreground font-mono" fontSize={14}>{formatStars(r.stars)} stars, +{r.gain} this week</text>
+            <rect x={0} y={y + 34} width={w} height={18} rx={3} className="fill-foreground" opacity={i ? 0.95 : 0.45} />
+            <text x={w + 10} y={y + 49} className="fill-foreground font-mono" fontSize={15}>{Math.round(r.score)}</text>
           </g>
         );
       })}
-      <text x={0} y={186} className="fill-muted-foreground font-mono" fontSize={11}>score = stars gained / log10(total stars + 100)</text>
+      <text x={0} y={196} className="fill-muted-foreground font-mono" fontSize={13}>score = gained / log10(stars + 100)</text>
     </svg>
   );
 }
@@ -64,15 +65,16 @@ function BurstChart() {
   const H = 70;
   const bars = (data: number[], y0: number, hot: boolean) =>
     data.map((v, i) => {
-      const h = (v / 92) * H;
+      // Square-root scale: everyday starring stays visible next to the spike.
+      const h = Math.sqrt(v / 92) * H;
       return <rect key={i} x={i * 21} y={y0 + H - h} width={15} height={Math.max(1.5, h)} rx={2} className="fill-foreground" opacity={hot && v > 50 ? 1 : 0.4} />;
     });
   return (
-    <svg viewBox="0 0 504 210" className="h-auto w-full" role="img" aria-label="Example: stars spread over the day versus most of a day's stars arriving in one hour">
-      <text x={0} y={12} className="fill-muted-foreground font-mono" fontSize={12}>Real growth: stars spread over the day</text>
-      {bars(organic, 20, false)}
-      <text x={0} y={122} className="fill-muted-foreground font-mono" fontSize={12}>Bought: most of the day&apos;s stars in one hour</text>
-      {bars(bought, 130, true)}
+    <svg viewBox="0 0 504 220" className="h-auto w-full" role="img" aria-label="Example: stars spread over the day versus most of a day's stars arriving in one hour">
+      <text x={0} y={14} className="fill-muted-foreground font-mono" fontSize={17}>Real: spread over the day</text>
+      {bars(organic, 24, false)}
+      <text x={0} y={132} className="fill-muted-foreground font-mono" fontSize={17}>Bought: most of it in one hour</text>
+      {bars(bought, 142, true)}
     </svg>
   );
 }
@@ -107,13 +109,15 @@ function MixChart({ parts }: { parts: { label: string; value: number }[] }) {
 function CategoryChart({ rows }: { rows: { id: string; label: string; value: number }[] }) {
   const max = Math.max(1, ...rows.map((r) => r.value));
   return (
-    <ul className="space-y-2">
+    <ul className="space-y-2.5">
       {rows.map((r) => (
         <li key={r.id}>
-          <Link href={`/category/${r.id}/`} className="group grid grid-cols-[9rem_1fr_3.5rem] items-center gap-3 text-sm">
-            <span className="truncate text-muted-foreground group-hover:text-foreground">{r.label}</span>
-            <span className="h-2.5 rounded-sm bg-foreground/80 transition-opacity group-hover:opacity-100" style={{ width: `${(r.value / max) * 100}%`, opacity: 0.75 }} />
-            <span className="text-right font-mono text-xs tabular-nums text-foreground">{formatStars(r.value)}</span>
+          <Link href={`/category/${r.id}/`} className="group block text-sm">
+            <span className="flex items-baseline justify-between gap-3">
+              <span className="text-muted-foreground group-hover:text-foreground">{r.label}</span>
+              <span className="font-mono text-xs tabular-nums text-foreground">{formatStars(r.value)}</span>
+            </span>
+            <span className="mt-1 block h-2 rounded-sm bg-foreground transition-opacity group-hover:opacity-100" style={{ width: `${Math.max(2, (r.value / max) * 100)}%`, opacity: 0.7 }} />
           </Link>
         </li>
       ))}
