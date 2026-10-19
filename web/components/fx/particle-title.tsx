@@ -14,7 +14,7 @@ type Star = { x: number; y: number; r: number; phase: number };
  * brightness, so grey parts of a logo stay grey. Reduced motion: drawn once, no animation.
  * `prepare` resolves when the shape can be painted (font loaded, image decoded).
  */
-function useParticles(prepare: (box: HTMLElement) => Promise<Paint | null>, opts: { stars: boolean; deps: unknown[] }) {
+function useParticles(prepare: (box: HTMLElement) => Promise<Paint | null>, opts: { stars: boolean; deps: unknown[]; gap?: number; dot?: number }) {
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
@@ -53,7 +53,7 @@ function useParticles(prepare: (box: HTMLElement) => Promise<Paint | null>, opts
       const o = off.getContext("2d")!;
       paint(o, w, h);
       const data = o.getImageData(0, 0, w, h).data;
-      const gap = w < 640 ? 3 : 4;
+      const gap = opts.gap ?? (w < 640 ? 3 : 4);
       const next: P[] = [];
       for (let y = 0; y < h; y += gap) {
         for (let x = 0; x < w; x += gap) {
@@ -76,7 +76,7 @@ function useParticles(prepare: (box: HTMLElement) => Promise<Paint | null>, opts
         ctx.globalAlpha = 0.15 + 0.35 * (0.5 + 0.5 * Math.sin(t / 900 + s.phase));
         ctx.fillRect(s.x, s.y, s.r, s.r);
       }
-      const size = w < 640 ? 1.6 : 2;
+      const size = opts.dot ?? (w < 640 ? 1.6 : 2);
       for (const p of particles) {
         ctx.globalAlpha = 0.95 * p.b;
         ctx.fillRect(p.x, p.y, size, size);
@@ -218,7 +218,8 @@ export function ParticleLogo({ src, lightSrc, className }: { src: string; lightS
         img.onerror = reject;
         img.src = src;
       }),
-    { stars: false, deps: [src] },
+    // A small, detailed shape: denser and finer than the title's particles, so the G, ring and grid stay readable.
+    { stars: false, deps: [src], gap: 2, dot: 1.5 },
   );
   return (
     <div ref={wrap} className={className} style={{ position: "relative" }}>
