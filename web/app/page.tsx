@@ -8,7 +8,7 @@ import { Metrics } from "@/components/home/metrics";
 import { ParticleLogo, ParticleTitle } from "@/components/fx/particle-title";
 import { NeonCard } from "@/components/fx/neon-card";
 import { SITE_URL, isToolList, type Item, type ListId, type WindowId } from "@/lib/data";
-import { readMeta, readRadar, readToolView, readToolboxMeta, readView } from "@/lib/server-data";
+import { readMeta, readNews, readRadar, readToolView, readToolboxMeta, readView } from "@/lib/server-data";
 import { RadarSection } from "@/components/radar/radar-section";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
@@ -34,6 +34,7 @@ function top(list: ListId, window: WindowId | null, n: number): { items: Item[] 
 
 export default function Home() {
   const meta = readMeta();
+  const news = readNews();
   const toolMeta = readToolboxMeta();
   const today = top("trending", "today", 10);
   const week = top("trending", "week", 10);
@@ -114,6 +115,30 @@ export default function Home() {
             <CompactList title="Agents & plugins" href="/toolbox/agents/" items={agents.items} gainLabel="this week" showCategory={false} empty="Being collected: the first agents appear after the next discovery run." />
           </div>
         </section>
+
+        {/* News */}
+        {news?.items.length ? (
+          <section className="mt-14" aria-labelledby="h-news">
+            <div className="mb-4 flex items-baseline justify-between gap-3">
+              <h2 id="h-news" className="font-display text-4xl text-foreground text-glow">From the newsletters</h2>
+              <Link href="/news/" className="text-sm text-muted-foreground hover:text-foreground">All news</Link>
+            </div>
+            <NeonCard>
+              <ul className="grid divide-y divide-border sm:grid-cols-2 sm:divide-y-0">
+                {news.items.slice(0, 6).map((i) => (
+                  <li key={i.u} className="border-border sm:border-b sm:odd:border-r">
+                    <a href={i.u} target="_blank" rel="noopener" className="block px-5 py-4 hover:text-foreground">
+                      <span className="line-clamp-2 text-foreground">{i.t}</span>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {news.sources.find((s) => s.id === i.s)?.name} · {i.d.slice(0, 10)}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </NeonCard>
+          </section>
+        ) : null}
 
         {/* How it works */}
         <section className="mt-14 grid gap-4 sm:grid-cols-3" aria-label="How it works">

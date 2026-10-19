@@ -10,6 +10,7 @@ const footerLinks = {
     { name: "Radar", href: "/radar/" },
     { name: "Agent toolbox", href: "/toolbox/" },
     { name: "Kits", href: "/kits/" },
+    { name: "News", href: "/news/" },
   ],
   Site: [
     { name: "Categories", href: "/categories/" },

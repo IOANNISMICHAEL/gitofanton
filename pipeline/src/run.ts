@@ -20,6 +20,7 @@ import { writeToolbox } from './toolbox.ts'
 import { writeRadars } from './radar.ts'
 import { dirname } from 'node:path'
 import { writeSearch } from './search.ts'
+import { writeNews } from './news.ts'
 import { selectPages, writePages, type ItemPaths } from './items.ts'
 import { BURST_MIN_DAY_GAIN, STARGAZER_PAGES_FOR_BURST, coordinated, judge, loadBlocklist, makeBlocker, pickCandidates, youngIds } from './trust.ts'
 import { rank } from './score.ts'
@@ -266,6 +267,7 @@ async function main() {
     writeSearch(OUT_DIR, scored, tools, downloads, paths)
   })
   await step('item-pages', () => writePages(dirname(OUT_DIR), pages, now))
+  await step('news', () => writeNews(OUT_DIR, '.cache/pipeline/last-good-data/news.json'))
 
   // 9. Persist state (one KV write).
   state.d1 = { day: today, written: d1Usage().writtenToday }

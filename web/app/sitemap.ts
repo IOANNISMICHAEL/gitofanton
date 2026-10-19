@@ -12,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   for (const c of CATEGORIES) urls.add(`/category/${c.id}/`);
   urls.add("/radar/");
   urls.add("/kits/");
+  urls.add("/news/");
   for (const k of allKits()) urls.add(`/kit/${k.slug}/`);
   for (const c of CATEGORIES) if (c.id !== "other" && c.id !== "ai") urls.add(`/radar/${c.id}/`);
   for (const list of Object.keys(LISTS) as ListId[]) {

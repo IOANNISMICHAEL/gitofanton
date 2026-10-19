@@ -1,0 +1,9 @@
+{
+  "feeds": [
+    { "id": "simonwillison", "name": "Simon Willison", "url": "https://simonwillison.net/atom/everything/" },
+    { "id": "latentspace", "name": "Latent Space", "url": "https://www.latent.space/feed" },
+    { "id": "huggingface", "name": "Hugging Face", "url": "https://huggingface.co/blog/feed.xml" },
+    { "id": "openai", "name": "OpenAI News", "url": "https://openai.com/news/rss.xml" },
+    { "id": "pragmatic", "name": "The Pragmatic Engineer", "url": "https://newsletter.pragmaticengineer.com/feed" }
+  ]
+}

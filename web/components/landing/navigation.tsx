@@ -12,6 +12,7 @@ const navLinks = [
   { name: "Radar",    href: "/radar/"    },
   { name: "Toolbox",  href: "/toolbox/"  },
   { name: "Kits",     href: "/kits/"     },
+  { name: "News",     href: "/news/"     },
   { name: "Categories", href: "/categories/" },
   { name: "About",    href: "/about/"    },
 ];
@@ -53,7 +54,7 @@ export function Navigation() {
             <span className={`cursor-blink font-display tracking-tight text-foreground text-glow transition-all duration-500 ${isScrolled ? "text-xl" : "text-2xl"}`}>Git of Anton</span>
           </Link>
 
-          <div className="hidden lg:flex items-center gap-7 xl:gap-9">
+          <div className="hidden xl:flex items-center gap-8">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
@@ -67,7 +68,7 @@ export function Navigation() {
             <SearchDialog />
           </div>
 
-          <div className="flex items-center gap-1 lg:hidden">
+          <div className="flex items-center gap-1 xl:hidden">
           <SearchDialog compact />
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -83,7 +84,7 @@ export function Navigation() {
 
       <div
         data-lenis-prevent
-        className={`lg:hidden fixed inset-0 bg-background z-40 transition-all duration-500 ${
+        className={`xl:hidden fixed inset-0 bg-background z-40 transition-all duration-500 ${
           isMobileMenuOpen
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"

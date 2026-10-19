@@ -23,6 +23,10 @@ export function readToolView(list: ListId, sort: ToolSortId = "trending", catego
   return readJson<View>(rel) ?? { list, window: null, category, lang: null, total: 0, items: [] };
 }
 
+export type NewsItem = { t: string; u: string; d: string; s: string };
+export type News = { sources: { id: string; name: string }[]; total: number; items: NewsItem[] };
+export const readNews = () => readJson<News>("news.json");
+
 export const readRadar = (category: string) => readJson<Radar>(`radar/${category}.json`);
 
 export const readMeta = () => readJson<Meta>("meta.json");
