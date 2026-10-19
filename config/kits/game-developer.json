@@ -24,13 +24,13 @@
       "picks": [
         {
           "role": "mcp",
-          "page": "repo/coding-solo/godot-mcp",
-          "name": "Godot MCP",
+          "url": "https://github.com/Erodenn/godot-mcp-runtime",
+          "name": "Godot MCP Runtime",
           "install": {
             "label": "Add to Claude Code",
-            "cmd": "claude mcp add godot -- npx @coding-solo/godot-mcp"
+            "cmd": "claude mcp add godot -- npx -y godot-mcp-runtime"
           },
-          "why": "Launches the editor, runs your project and reads its debug output, so the agent sees what broke."
+          "why": "Drives the Godot editor and the running game. Nothing to install into your project, and actively maintained."
         }
       ]
     },
@@ -48,14 +48,14 @@
           "why": "Published by Epic Games and listed in Anthropic's official plugin marketplace."
         },
         {
-          "role": "agent",
-          "page": "agent/natfii/unrealclaude",
-          "name": "UnrealClaude",
+          "role": "mcp",
+          "url": "https://github.com/ChiR24/Unreal_mcp",
+          "name": "Unreal Engine MCP",
           "install": {
-            "label": "Get the plugin",
-            "cmd": "git clone --recurse-submodules https://github.com/Natfii/UnrealClaude.git"
+            "label": "Add to Claude Code",
+            "cmd": "claude mcp add unreal-engine -- npx -y unreal-engine-mcp-server@beta"
           },
-          "why": "Claude Code inside the Unreal 5.7 editor, with the engine docs built in."
+          "why": "Controls the Unreal editor: actors, assets, levels. Also needs its Unreal plugin, see its README."
         }
       ]
     },
