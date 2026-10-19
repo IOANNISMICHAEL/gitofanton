@@ -80,6 +80,7 @@ export function Navigation() {
       </nav>
 
       <div
+        data-lenis-prevent
         className={`md:hidden fixed inset-0 bg-background z-40 transition-all duration-500 ${
           isMobileMenuOpen
             ? "opacity-100 pointer-events-auto"

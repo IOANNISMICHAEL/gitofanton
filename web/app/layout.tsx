@@ -2,6 +2,7 @@ import React from "react"
 import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import { ThemeProvider } from '@/components/theme-provider'
+import { SmoothScroll } from '@/components/fx/smooth-scroll'
 import './globals.css'
 
 // Self-hosted (fontsource) so builds never depend on reaching Google Fonts.
@@ -68,6 +69,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${instrumentSans.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          <SmoothScroll />
           {children}
         </ThemeProvider>
       </body>
