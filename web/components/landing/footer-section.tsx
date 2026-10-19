@@ -9,6 +9,7 @@ const footerLinks = {
   Explore: [
     { name: "Radar", href: "/radar/" },
     { name: "Agent toolbox", href: "/toolbox/" },
+    { name: "Kits", href: "/kits/" },
   ],
   Site: [
     { name: "Categories", href: "/categories/" },

@@ -1,0 +1,79 @@
+{
+  "slug": "frontend-developer",
+  "title": "Frontend developer",
+  "intro": "Tools that turn designs into code, make it look good, and check it in a real browser.",
+  "reviewed": "2026-10-19",
+  "tasks": [
+    {
+      "task": "Turn Figma designs into code",
+      "picks": [
+        {
+          "role": "mcp",
+          "page": "repo/glips/figma-context-mcp",
+          "name": "Figma Context MCP",
+          "install": {
+            "label": "Add to Claude Code",
+            "cmd": "claude mcp add figma -- npx -y figma-developer-mcp --figma-api-key=YOUR-KEY --stdio"
+          },
+          "why": "Gives the agent the layout and styles of a Figma frame, so the code matches the design."
+        }
+      ]
+    },
+    {
+      "task": "Make the UI look designed",
+      "picks": [
+        {
+          "role": "skill",
+          "page": "skill/anthropics/skills/frontend-design",
+          "name": "frontend-design",
+          "why": "Anthropic's own skill for distinctive, production grade interfaces instead of generic layouts."
+        }
+      ]
+    },
+    {
+      "task": "Test in a real browser",
+      "picks": [
+        {
+          "role": "mcp",
+          "page": "repo/microsoft/playwright-mcp",
+          "name": "Playwright MCP",
+          "install": {
+            "label": "Add to Claude Code",
+            "cmd": "claude mcp add playwright npx @playwright/mcp@latest"
+          },
+          "why": "From Microsoft. The agent clicks through your app and checks what actually renders."
+        }
+      ]
+    },
+    {
+      "task": "Debug performance and console errors",
+      "picks": [
+        {
+          "role": "mcp",
+          "page": "repo/chromedevtools/chrome-devtools-mcp",
+          "name": "Chrome DevTools MCP",
+          "install": {
+            "label": "Add to Claude Code",
+            "cmd": "claude mcp add chrome-devtools -- npx -y chrome-devtools-mcp@latest"
+          },
+          "why": "From the Chrome team. Network, console and performance traces, read by the agent."
+        }
+      ]
+    },
+    {
+      "task": "The coding agent itself",
+      "picks": [
+        {
+          "role": "agent",
+          "page": "agent/anthropics/claude-code",
+          "name": "Claude Code",
+          "install": {
+            "label": "Install",
+            "cmd": "curl -fsSL https://claude.ai/install.sh | bash"
+          },
+          "why": "Runs every tool above from one terminal."
+        }
+      ]
+    }
+  ]
+}

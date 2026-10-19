@@ -1,0 +1,112 @@
+{
+  "slug": "game-developer",
+  "title": "Game developer",
+  "intro": "Tools that let a coding agent work inside your engine: edit scenes, build levels, make 3D and 2D assets.",
+  "reviewed": "2026-10-19",
+  "tasks": [
+    {
+      "task": "Work inside the Unity editor",
+      "picks": [
+        {
+          "role": "mcp",
+          "page": "repo/coplaydev/unity-mcp",
+          "name": "MCP for Unity",
+          "install": {
+            "label": "Unity Package Manager, add from git URL",
+            "cmd": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main"
+          },
+          "why": "The most starred Unity MCP server. The agent manages assets, controls scenes and edits scripts in your editor."
+        }
+      ]
+    },
+    {
+      "task": "Build in Godot",
+      "picks": [
+        {
+          "role": "mcp",
+          "page": "repo/coding-solo/godot-mcp",
+          "name": "Godot MCP",
+          "install": {
+            "label": "Add to Claude Code",
+            "cmd": "claude mcp add godot -- npx @coding-solo/godot-mcp"
+          },
+          "why": "Launches the editor, runs your project and reads its debug output, so the agent sees what broke."
+        }
+      ]
+    },
+    {
+      "task": "Work in Unreal Engine",
+      "picks": [
+        {
+          "role": "skill",
+          "page": "repo/epicgames/unreal-engine-skills-for-claude-code-plugin",
+          "name": "Unreal Engine skills",
+          "install": {
+            "label": "In Claude Code",
+            "cmd": "/plugin install unreal-engine-skills-for-claude-code@claude-plugins-official"
+          },
+          "why": "Published by Epic Games and listed in Anthropic's official plugin marketplace."
+        },
+        {
+          "role": "agent",
+          "page": "agent/natfii/unrealclaude",
+          "name": "UnrealClaude",
+          "install": {
+            "label": "Get the plugin",
+            "cmd": "git clone --recurse-submodules https://github.com/Natfii/UnrealClaude.git"
+          },
+          "why": "Claude Code inside the Unreal 5.7 editor, with the engine docs built in."
+        }
+      ]
+    },
+    {
+      "task": "Make 3D models and scenes",
+      "picks": [
+        {
+          "role": "mcp",
+          "page": "repo/ahujasid/mcp-for-blender",
+          "name": "Blender MCP",
+          "install": {
+            "label": "Add to Claude Code",
+            "cmd": "claude mcp add blender uvx mcp-for-blender"
+          },
+          "why": "Community plugin that drives Blender from a prompt. One of the most starred MCP servers."
+        }
+      ]
+    },
+    {
+      "task": "Draw pixel art and sprites",
+      "picks": [
+        {
+          "role": "mcp",
+          "page": "repo/with-pebbly/aseprite-ai-artist",
+          "name": "Aseprite AI Artist",
+          "install": {
+            "label": "Install the Aseprite extension",
+            "cmd": "npx @pebbly/aseprite-ai-artist install-extension",
+            "then": [
+              "/plugin marketplace add with-pebbly/aseprite-ai-artist",
+              "/plugin install aseprite@aseprite-ai-artist"
+            ]
+          },
+          "why": "The agent paints in the Aseprite window you already have open. MCP server plus skills."
+        }
+      ]
+    },
+    {
+      "task": "The coding agent itself",
+      "picks": [
+        {
+          "role": "agent",
+          "page": "agent/anthropics/claude-code",
+          "name": "Claude Code",
+          "install": {
+            "label": "Install",
+            "cmd": "curl -fsSL https://claude.ai/install.sh | bash"
+          },
+          "why": "Every pick above installs into it. Works in the terminal next to your engine."
+        }
+      ]
+    }
+  ]
+}

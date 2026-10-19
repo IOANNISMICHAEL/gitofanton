@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { CATEGORIES, LANGUAGES, LISTS, SITE_URL, isToolList, toolHref, toolSortsFor, viewHref, type ListId } from "@/lib/data";
 import { readMeta } from "@/lib/server-data";
 import { allPages } from "@/lib/items";
+import { allKits } from "@/lib/kits";
 
 export const dynamic = "force-static";
 
@@ -10,6 +11,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const urls = new Set<string>(["/", "/toolbox/", "/categories/", "/about/"]);
   for (const c of CATEGORIES) urls.add(`/category/${c.id}/`);
   urls.add("/radar/");
+  urls.add("/kits/");
+  for (const k of allKits()) urls.add(`/kit/${k.slug}/`);
   for (const c of CATEGORIES) if (c.id !== "other" && c.id !== "ai") urls.add(`/radar/${c.id}/`);
   for (const list of Object.keys(LISTS) as ListId[]) {
     if (isToolList(list)) {

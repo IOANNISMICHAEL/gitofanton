@@ -1,0 +1,82 @@
+{
+  "slug": "product-manager",
+  "title": "Product manager",
+  "intro": "Tools for specs, tickets and what is actually shipping, without leaving one chat.",
+  "reviewed": "2026-10-19",
+  "tasks": [
+    {
+      "task": "Write PRDs, strategy and research",
+      "picks": [
+        {
+          "role": "skill",
+          "page": "repo/deanpeters/product-manager-skills",
+          "name": "Product Manager Skills",
+          "install": {
+            "label": "In Claude Code",
+            "cmd": "/plugin marketplace add deanpeters/Product-Manager-Skills",
+            "then": [
+              "/plugin install product-manager-skills@pm-skills"
+            ]
+          },
+          "why": "A large set of PM skills built on proven methods: PRDs, discovery, prioritisation, roadmaps."
+        }
+      ]
+    },
+    {
+      "task": "Run Jira and Confluence",
+      "picks": [
+        {
+          "role": "mcp",
+          "url": "https://github.com/sooperset/mcp-atlassian",
+          "name": "MCP Atlassian",
+          "install": {
+            "label": "Run",
+            "cmd": "uvx mcp-atlassian"
+          },
+          "why": "Search, create and update Jira issues and Confluence pages. Needs your site URL and an API token."
+        }
+      ]
+    },
+    {
+      "task": "Track issues and pull requests on GitHub",
+      "picks": [
+        {
+          "role": "mcp",
+          "page": "repo/github/github-mcp-server",
+          "name": "GitHub MCP Server",
+          "install": {
+            "label": "Add to Claude Code",
+            "cmd": "claude mcp add github -e GITHUB_PERSONAL_ACCESS_TOKEN=$GITHUB_PAT -- docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server"
+          },
+          "why": "GitHub's official server. Read issues, PRs and releases to see what actually shipped."
+        }
+      ]
+    },
+    {
+      "task": "Turn a PRD into a build plan",
+      "picks": [
+        {
+          "role": "agent",
+          "page": "agent/nurettincoban/ai-prd-workflow",
+          "name": "AI PRD workflow",
+          "why": "A step by step workflow that takes a PRD to tasks an agent can build."
+        }
+      ]
+    },
+    {
+      "task": "The agent itself",
+      "picks": [
+        {
+          "role": "agent",
+          "page": "agent/anthropics/claude-code",
+          "name": "Claude Code",
+          "install": {
+            "label": "Install",
+            "cmd": "curl -fsSL https://claude.ai/install.sh | bash"
+          },
+          "why": "Not only for code: it reads docs, tickets and data with the tools above."
+        }
+      ]
+    }
+  ]
+}
