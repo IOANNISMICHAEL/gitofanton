@@ -1,6 +1,6 @@
 // GitHub GraphQL client: batched repo lookups, star snapshots and search, with rate-limit logging.
 import { GITHUB_PACE_FACTOR } from './config.ts'
-import { env, log, sleep } from './util.ts'
+import { env, log, sleep, NotJsonError, readJson } from './util.ts'
 
 export type RepoMeta = {
   id: number
@@ -103,7 +103,15 @@ async function graphql<T>(query: string, variables: Record<string, unknown> = {}
     }
     return graphql<T>(query, variables, attempt + 1)
   }
-  const body = (await res.json()) as { data?: T & { rateLimit?: { cost: number; remaining: number } }; errors?: { type?: string; path?: unknown[]; message: string }[] }
+  let body: { data?: T & { rateLimit?: { cost: number; remaining: number } }; errors?: { type?: string; path?: unknown[]; message: string }[] }
+  try {
+    body = await readJson(res, 'GitHub GraphQL')
+  } catch (e) {
+    // GitHub's "unicorn" error page: wait and retry like a 5xx.
+    if (!(e instanceof NotJsonError) || attempt >= 5) throw e
+    await sleep(2000 * 2 ** attempt)
+    return graphql<T>(query, variables, attempt + 1)
+  }
   if (!res.ok || !body.data) throw new Error(`GitHub GraphQL failed (${res.status}): ${JSON.stringify(body.errors ?? body).slice(0, 500)}`)
   // Errors tied to one repo (deleted, renamed, DMCA-blocked) carry a path and leave that entry null: skip them.
   // Errors without a path mean the whole query failed.
@@ -225,7 +233,7 @@ export async function restGet<T>(path: string, attempt = 0): Promise<T | null> {
     return restGet<T>(path, attempt + 1)
   }
   if (!res.ok) throw new Error(`GitHub REST ${path}: ${res.status}`)
-  return (await res.json()) as T
+  return readJson<T>(res, `GitHub REST ${path}`)
 }
 
 export async function searchCount(q: string): Promise<number> {

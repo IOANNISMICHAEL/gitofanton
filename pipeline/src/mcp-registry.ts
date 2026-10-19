@@ -1,5 +1,5 @@
 // Official MCP Registry client (https://registry.modelcontextprotocol.io, public, no key).
-import { log, sleep } from './util.ts'
+import { log, sleep, readJson } from './util.ts'
 
 const BASE = 'https://registry.modelcontextprotocol.io/v0/servers'
 
@@ -23,7 +23,7 @@ async function getPage(params: URLSearchParams, attempt = 0): Promise<Page> {
   try {
     const res = await fetch(`${BASE}?${params}`, { headers: { 'user-agent': 'git-of-anton-pipeline (+https://gitofanton.com)' } })
     if (!res.ok) throw new Error(`MCP Registry ${res.status}`)
-    return (await res.json()) as Page
+    return readJson<Page>(res, 'MCP Registry')
   } catch (e) {
     if (attempt >= 4) throw e
     await sleep(2000 * 2 ** attempt)

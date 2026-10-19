@@ -50,6 +50,10 @@ export async function step<T>(name: string, fn: () => Promise<T>): Promise<T> {
   const t0 = Date.now()
   try {
     return await fn()
+  } catch (e) {
+    // Name the step in the error, so the public annotation says where a run stopped.
+    if (e instanceof Error && !e.message.startsWith('[')) e.message = `[${name}] ${e.message}`
+    throw e
   } finally {
     timings[name] = +((Date.now() - t0) / 1000).toFixed(1)
     console.log(`step ${name}: ${timings[name]}s`)
@@ -60,4 +64,17 @@ export const stepTimings = () => ({ ...timings })
 
 export function log(msg: string, data?: Record<string, unknown>) {
   console.log(data ? `${msg} ${JSON.stringify(data)}` : msg)
+}
+
+/** A response body that is not JSON (an HTML error page from a proxy or an outage). Worth retrying. */
+export class NotJsonError extends Error {}
+
+/** Parses a response as JSON; an HTML error page becomes a NotJsonError naming the service and status. */
+export async function readJson<T>(res: Response, what: string): Promise<T> {
+  const text = await res.text()
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    throw new NotJsonError(`${what} returned ${res.status} with a non-JSON body: ${text.replace(/\s+/g, ' ').slice(0, 120)}`)
+  }
 }

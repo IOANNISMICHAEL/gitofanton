@@ -1,5 +1,5 @@
 // Weekly package downloads (npm, PyPI), refreshed a seventh of the packages each day.
-import { log, mapLimit, sleep, chunk } from './util.ts'
+import { log, mapLimit, sleep, chunk, readJson } from './util.ts'
 
 type Pkg = { id: number; package: string; package_registry: string }
 
@@ -11,7 +11,7 @@ async function getJson<T>(url: string, attempt = 0): Promise<T | null> {
     return getJson<T>(url, attempt + 1)
   }
   if (!res.ok) return null
-  return (await res.json()) as T
+  return readJson<T>(res, `downloads ${url}`)
 }
 
 /** npm: unscoped names in bulk (≤ 128 per request); scoped names one by one (bulk doesn't support them). */

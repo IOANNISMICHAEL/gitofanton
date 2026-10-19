@@ -1,6 +1,6 @@
 // Thin Cloudflare REST clients for D1 and KV, plus the D1 daily write-budget guard (PLAN 6.10).
 import { D1_DAILY_WRITE_GUARD } from './config.ts'
-import { chunk, env, log, sleep } from './util.ts'
+import { chunk, env, log, sleep, readJson } from './util.ts'
 
 const API = 'https://api.cloudflare.com/client/v4'
 
@@ -10,7 +10,9 @@ function headers(extra: Record<string, string> = {}) {
 
 async function cfFetch(url: string, init: RequestInit, attempt = 0): Promise<Response> {
   const res = await fetch(url, init)
-  if ((res.status === 429 || res.status >= 500) && attempt < 4) {
+  // Cloudflare's API answers in JSON; an HTML page means an edge or upstream error: retry it too.
+  const html = /text\/html/i.test(res.headers.get('content-type') ?? '')
+  if ((res.status === 429 || res.status >= 500 || html) && attempt < 4) {
     await sleep(1000 * 2 ** attempt)
     return cfFetch(url, init, attempt + 1)
   }
@@ -65,7 +67,7 @@ export async function d1<T = Record<string, unknown>>(sql: string, params: unkno
     headers: headers({ 'content-type': 'application/json' }),
     body: JSON.stringify({ sql, params }),
   })
-  const body = (await res.json()) as { success: boolean; errors?: unknown; result?: D1Result<T>[] }
+  const body = await readJson<{ success: boolean; errors?: unknown; result?: D1Result<T>[] }>(res, 'Cloudflare D1 API')
   if (!res.ok || !body.success || !body.result?.[0]) {
     throw new Error(`D1 query failed (${res.status}): ${JSON.stringify(body.errors)}: ${sql.slice(0, 120)}`)
   }
